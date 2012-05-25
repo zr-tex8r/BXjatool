@@ -1,0 +1,92 @@
+% 文字コードは UTF-8
+% lualatex で組版する（LuaTeX-ja 使用）
+\documentclass[a4paper]{ltjsarticle}
+\usepackage{shortvrb}
+\MakeShortVerb{\|}
+\newcommand{\PkgVersion}{0.2}
+\newcommand{\Pkg}[1]{\textsf{#1}}
+\newcommand{\Meta}[1]{$\langle$\mbox{}#1\mbox{}$\rangle$}
+\newcommand{\Note}{\par\noindent ※}
+\newcommand{\Means}{~：\quad}
+%-----------------------------------------------------------
+\begin{document}
+\title{\Pkg{bxjaprnind} パッケージ（v\PkgVersion）}
+\author{八登崇之\ （Takayuki YATO; aka.~``ZR''）}
+\date{2012/05/25}
+\maketitle
+
+%===========================================================
+\section{概要}
+
+以下の機能を提供する。
+\begin{itemize}
+\item 段落冒頭および強制改行後の行頭における開き括弧の前に
+  （環境により）挿入されるグルーを除去する。
+  このようなグルーが行分割の都合で伸縮すると、
+  ソース上で同じ条件にある括弧の位置が揃わないという
+  不都合が生じる。
+\item さらに、そのような開き括弧の前の字下げを、
+  著者が予め設定した量に自動的に調整する。
+\item 強制改行命令（|\\|）のオプションとして
+  改行後に予め設定した量の字下げを行えるようにする。
+\end{itemize}
+
+\paragraph{依存パッケージ}
+\begin{itemize}
+\item \Pkg{bxoolbox} パッケージ
+  \footnote{https://github.com/zr-tex8r/BXjatool （暫定）}
+\item \Pkg{everyhook} パッケージ
+\item \Pkg{svn-proc} パッケージ
+\end{itemize}
+
+%===========================================================
+\section{パッケージの読込}
+
+|\usepackage| で読み込む。
+オプションはない。
+\begin{verbatim}
+\usepackage{bxjaprnind}
+\end{verbatim}
+
+%===========================================================
+\section{機能}
+
+以下の命令が提供される。
+
+\begin{itemize}
+\item |\useparheadparenindent|／|\nouseparheadparenindent|\Means
+  段落頭での開き括弧調整を有効／無効にする。
+\item |\uselineheadlineenindent|／|\nouselineheadlineenindent|\Means
+  強制改行後の行頭での開き括弧調整を有効／無効にする。
+  \Note 折り返しの行頭の調整には対応しない
+  （これにはJFMの修正が必須）。
+  現在(u)pTeXで標準的に用いられるJFMの場合、
+  折り返し行頭の開き括弧の前には空きは入らない。
+\item |\prnind[|\Meta{実数$r$}|]|\Means
+  段落頭で用いて、当該の箇所での調整を
+  （|\nouseparheadparenindent| の状態でも）有効にする。
+  オプションの引数が存在する場合は、
+  開き括弧の前の空きを$r$全角幅とする。
+\item |\\[|\Meta{引数}|]|／|\\*[|\Meta{引数}|]|\Means
+  強制改行命令のオプション引数が次のように拡張される。
+  \begin{itemize}
+  \item |\\[>]|\Means
+    行頭に |\lineheadforceindentamount| で指定した幅の
+    字下げを挿入する。
+  \item |\\[!]|\Means
+    開き括弧調整の有効・無効を逆転する。
+    元々の引数（改行調整の値）と併用する場合は、
+    |!| や |>| を長さの値の前に記述する
+    （例えば |\\[>!2mm]|）。
+  \end{itemize}
+\item |\parheadparenindentamount{|\Meta{実数$r$}|}|\Means
+  段落頭での開き括弧の前の追加の空きを$r$全角幅とする。
+  段落下げの空き（|\parindent|）はこれとは独立に入ることに注意。
+\item |\lineheadparenindentamount{|\Meta{実数$r$}|}|\Means
+  強制改行後の行頭での開き括弧の前の追加の空きを$r$全角幅とする。
+  （強制字下げ（|\\[>]|）の空きとは独立。）
+\item |\lineheadforceindentamount{|\Meta{実数$r$}|}|\Means
+  強制字下げ（|\\[>]|）の空きを$r$全角幅とする。
+\end{itemize}
+
+\end{document}

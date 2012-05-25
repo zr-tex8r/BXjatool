@@ -1,0 +1,286 @@
+%
+% bxcalcux.sty
+%
+
+%% package declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bxcalcux}[2012/05/20 v0.2]
+
+%% preparations
+\def\bxcx@pkgname{bxcalcux}
+\def\bxcx@error{\PackageError\bxcx@pkgname}
+\RequirePackage{bxtoolbox}
+
+%% environment check
+\@tempswafalse
+\@ifpackageloaded{calc}{\@tempswatrue}{}
+%\@ifpackageloaded{l3calc}{\@tempswatrue}{}
+\if@tempswa\else
+  \PackageWarning\bxcx@pkgname
+   {Package 'calc' not yet loaded}
+  \RequirePackage{calc}
+\fi
+
+%% code guards
+\edef\bxcx@restore@codes{%
+\catcode33=\the\catcode33%
+\catcode34=\the\catcode34%
+\catcode63=\the\catcode63%
+\endlinechar=\the\endlinechar%
+\relax}
+\catcode33=12 %<!>
+\catcode34=12 %<">
+\catcode63=12 %<?>
+\endlinechar=-1 %
+\AtEndOfPackage{
+  \bxcx@restore@codes
+  \undef\bxcx@restore@codes
+}
+
+%% variables
+\let\bxcx@parsed\@empty   % parsed token list
+\let\bxcx@unit\@empty     % unit string now holding
+\let\bxcx@unitlc\@empty   % unit string now holding, lowercased
+\newcount\bxcx@arg@count  % # of arguments remaining
+\let\bxcx@mode\relax      % current mode (N/L/U)
+\let\bxcx@g@tempa\@empty  % global temp
+% \bxcx@arity\CS          % arity of functions of which the
+                          % argument should be also parsed
+% \bxcx@lc/<char>         % lowercase letter of an alphabet letter
+% \bxcx@tl/<str>          % tl that relates to unit <str>
+% \bxcx@mluf/<str>        % is there a multichar unit <char>... ?
+
+%% Makes the array \bxcx@arity*.
+\csdef{bxcx@arity\string\minof}{2}
+\csdef{bxcx@arity\string\maxof}{2}
+
+%% Makes the array \bxcx@lc/*.
+\def\bxcx@assign@lc#1#2{%
+  \csdef{bxcx@lc/#1}{#2}
+}
+\@tempcnta=65
+\@tempcntb=97
+\@whilenum\@tempcnta<91 \do{
+  \lccode`!=\@tempcnta \lccode`?=\@tempcntb
+  \lowercase{
+    \bxcx@assign@lc{!}{?}
+    \bxcx@assign@lc{?}{?}
+  }
+  \advance\@tempcnta\@ne
+  \advance\@tempcntb\@ne
+}
+
+%------------------- unit registration
+
+\newcommand*\DeclareCalcUnit[2]{
+  \edef\bxcx@tempa{#1}
+  \bxIfx{\bxcx@tempa\@empty}{}{%else
+    \expandafter\bxcx@decl@calc@unit@a
+     \meaning\bxcx@tempa\bxcx@end{#2}
+  }
+}
+\def\bxcx@decl@calc@unit@a#1>#2#3\bxcx@end#4{
+  \ifstrempty{#3}{
+    \csdef{bxcx@tl/#2}{#4}
+  }{%else
+    \csdef{bxcx@mluf/\@nameuse{bxcx@lc/#2}}{t}
+    \let\bxcx@unitlc\@empty
+    \bxForEachTokenIn#2#3\do{
+      \eappto\bxcx@unitlc{\@nameuse{bxcx@lc/##1}}
+    }
+    \csdef{bxcx@tl/\bxcx@unitlc}{#4}
+  }
+}
+
+%------------------- parser
+
+%% \bxcx@mark / \bxcx@end
+% Unique tokens.
+\def\bxcx@mark{\noexpand\bxcx@mark@}
+\def\bxcx@end{\noexpand\bxcx@end@}
+
+%%<+> \CUXParseExpr\CS{<expr>}
+\newcommand*\CUXParseExpr[2]{
+  \bxcx@parse{#2}
+  \let#1=\bxcx@parsed
+}
+
+%% \bxcx@parse
+\def\bxcx@parse#1{
+  \let\bxcx@parsed\@empty
+  \bxcx@clear@unit
+  \let\bxcx@mode=N\relax
+  \bxcx@parse@a#1@\bxcx@end
+}
+\def\bxcx@the#1{\expandafter\bxcx@thee\meaning#1}
+{\lccode`?=`r \lowercase{\gdef\bxcx@thee#1? #2{#2}}}
+\def\bxcx@parse@a{
+%\typeout{[\bxcx@the\bxcx@mode:\the\bxcx@arg@count:\bxcx@unitlc]\expandonce{\bxcx@parsed}}
+  \futurelet\bxcx@tok\bxcx@parse@b
+}
+\def\bxcx@parse@b{
+%\typeout{<token:\meaning\bxcx@tok>}
+  \bxIfx{\bxcx@tok\@sptoken}{
+    \bxcx@parse@space
+  }{\bxIfx{\bxcx@tok\bgroup}{
+    \bxcx@parse@group
+  }{\bxIfcat{\relax\noexpand\bxcx@tok}{
+    \bxcx@arg@count=\z@
+    \bxcx@parse@cs
+  }{%else
+    \bxcx@arg@count=\z@
+    \bxcx@parse@char
+  }}}
+}
+\begingroup
+  \def\? {
+    \bxcx@parse@char{ }
+  }
+  \global\let\bxcx@parse@space\?
+\endgroup
+\def\bxcx@parse@char#1{
+  \bxIf{N\bxcx@mode}{
+    \bxIfcsdef{bxcx@lc/#1}{
+      \bxIfcsdef{bxcx@tl/#1}{
+        \bxcx@add@unit{#1}
+        \let\bxcx@mode=L\relax
+      }{\bxIfcsdef{bxcx@mluf/\@nameuse{bxcx@lc/#1}}{
+        \bxcx@addto@unit{#1}
+        \let\bxcx@mode=U\relax
+      }{%else
+        \appto\bxcx@parsed{#1}
+        \let\bxcx@mode=L\relax
+      }}
+    }{%else
+      \appto\bxcx@parsed{#1}
+    }
+  }{\bxIf{U\bxcx@mode}{
+    \bxIfcsdef{bxcx@lc/#1}{
+      \bxcx@addto@unit{#1}
+      \bxIfcsdef{bxcx@tl/\bxcx@unitlc}{
+        \bxcx@add@unit{\bxcx@unitlc}
+        \bxcx@clear@unit
+        \let\bxcx@mode=L\relax
+      }{}
+    }{%else
+      \eappto\bxcx@parsed{\bxcx@unit}
+      \bxcx@clear@unit
+      \appto\bxcx@parsed{#1}
+      \let\bxcx@mode=N\relax
+    }
+  }{%else(L\bxcx@mode)
+    \appto\bxcx@parsed{#1}
+    \bxIfcsdef{bxcx@lc/#1}{}{%else
+      \let\bxcx@mode=N\relax
+    }
+  }}
+  \bxcx@parse@a
+}
+\def\bxcx@parse@cs#1{
+%\typeout{<cs:\string#1>}
+  \bxIfx{#1\bxcx@end}{
+    \bxcx@parse@fin
+  }{%else
+    \bxIfcsdef{bxcx@arity\string#1}{
+      \bxcx@arg@count=\@nameuse{bxcx@arity\string#1}\relax
+    }{}
+    \bxIf{U\bxcx@mode}{
+      \eappto\bxcx@parsed{\bxcx@unit}
+      \bxcx@clear@unit
+    }{}
+    \appto\bxcx@parsed{#1}
+    \let\bxcx@mode=N\relax
+    \bxcx@parse@a
+  }
+}
+\def\bxcx@parse@group#1{
+  \bxIf{U\bxcx@mode}{
+    \eappto\bxcx@parsed{\bxcx@unit}
+    \bxcx@clear@unit
+  }{}
+  \bxIfnum{\bxcx@arg@count>\z@}{
+%\typeout{<group:parse>}
+    \begingroup
+      \bxcx@parse{#1}
+      \global\let\bxcx@gtempa\bxcx@parsed
+    \endgroup
+    \expandafter\bxcx@parse@group@a\bxcx@gtempa\bxcx@end
+    \advance\bxcx@arg@count\m@ne
+  }{%else
+%\typeout{<group:pass>}
+    \appto\bxcx@parsed{{#1}}
+  }
+  \let\bxcx@mode=N\relax
+  \bxcx@parse@a
+}
+\def\bxcx@parse@group@a#1\bxcx@end{
+  \appto\bxcx@parsed{{#1}}
+}
+\def\bxcx@parse@fin{
+  \expandafter\bxcx@parse@fin@a\bxcx@parsed\bxcx@end
+}
+\def\bxcx@parse@fin@a#1@\bxcx@end{
+  \def\bxcx@parsed{#1}
+}
+
+%% \bxcx@add@unit
+\def\bxcx@add@unit#1{
+%\typeout{<unit:#1>}
+  \expandafter\bxcx@add@unit@a\csname bxcx@tl/#1
+   \endcsname\bxcx@end
+}
+\def\bxcx@add@unit@a#1\bxcx@end{
+  \appto\bxcx@parsed{#1}
+}
+
+%% \bxcx@clear@unit
+\def\bxcx@clear@unit{
+  \let\bxcx@unit\@empty
+  \let\bxcx@unitlc\@empty
+}
+
+%% \bxcx@addto@unit
+\def\bxcx@addto@unit#1{
+  \appto\bxcx@unit{#1}
+  \eappto\bxcx@unitlc{\@nameuse{bxcx@lc/#1}}
+}
+
+%------------------- apply the patch
+
+%% \bxcx@decl@patch\xxx{<body>}
+% Here xxx is setlength or addtolength; and gives a new
+% definition to that command. The <body> knows two macro
+% arguments (#1 & #2) and \CUXxxx is the original definition
+% of \xxx.
+\def\bxcx@decl@patch#1{
+  \expandafter\bxcx@decl@patch@a\csname
+   \expandafter\@gobble\string#1\space\expandafter\endcsname
+   \csname CUX\expandafter\@gobble\string#1\endcsname
+   #1
+}
+\def\bxcx@decl@patch@a#1#2#3{
+  \def\bxcx@tempa{\protect#1}
+  \bxIfx{\bxcx@tempa#3}{
+    \let#2=#1
+    \def#1##1##2
+  }{%else
+    \let#2=#3
+    \DeclareRobustCommand*#3[2]
+  }
+}
+
+%% Patch to \setlength.
+\bxcx@decl@patch\setlength{
+  \bxcx@parse{#2}
+  \CUXsetlength{#1}{\bxcx@parsed}
+}
+
+%% Patch to \addtolength.
+\bxcx@decl@patch\addtolength{
+  \bxcx@parse{#2}
+  \CUXaddtolength{#1}{\bxcx@parsed}
+}
+
+%------------------- all done
+\endinput
+%% EOF

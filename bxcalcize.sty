@@ -1,0 +1,73 @@
+%
+% bxcalcize.sty
+%
+
+% Many of the standard LaTeX commands utilizes the 'calc'
+% functions when it is present. Unfortunately, few of the
+% basic commands do not. So here a patch code is provided
+% to make such commands 'calc'-aware.
+
+%% package declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bxcalcize}[2012/05/20 v0.2]
+
+%% preparations
+\def\bxcy@pkgname{bxcalcize}
+\def\bxcy@warn{\PackageWarningNoLine\bxcy@pkgname}
+
+%% prerequisite packages
+\RequirePackage{calc}
+
+%% code guards
+\def\bxcy@restore@codes{%
+\endlinechar=\the\endlinechar%
+\relax}
+\AtEndOfPackage{\bxcy@restore@codes}
+%
+\endlinechar=-1 %
+
+%------------------- 
+
+\newdimen\bxcy@resdim
+
+%% to \hspace / \vspace
+\@namedef{hspace }{
+  \@ifstar{\bxcy@with@calc\@hspacer}
+   {\bxcy@with@calc\@hspace}
+}
+\@namedef{vspace }{
+  \@ifstar{\bxcy@with@calc\@vspacer}
+   {\bxcy@with@calc\@vspace}
+}
+
+%% to \addvspace
+\let\bxcy@org@addvspace\addvspace
+\def\addvspace{
+  \bxcy@with@calc\bxcy@org@addvspace
+}
+
+%% to \\[<len>] (\@newline)
+\def\bxcy@org@@newline[#1]{
+  \let\reserved@e\vadjust
+  \@gnewline{\vskip#1}
+}
+\ifx\bxcy@org@@newline\@newline
+  \def\@newline[#1]{
+    \setlength\bxcy@resdim{#1}
+    \edef\bxcy@tmpa{[\the\bxcy@resdim]}
+    \expandafter\bxcy@org@@newline\bxcy@tmpa
+  }
+\else
+  \bxcy@warn{Patch to \string\@newline\space failed.}
+\fi
+
+%% \bxcy@with@calc
+\def\bxcy@with@calc#1#2{
+  \setlength\bxcy@resdim{#2}
+  \edef\bxcy@tmpa{{\the\bxcy@resdim}}
+  \expandafter#1\bxcy@tmpa
+}
+
+%------------------- all done
+\endinput
+%% EOF

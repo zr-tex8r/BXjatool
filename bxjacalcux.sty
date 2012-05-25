@@ -1,0 +1,49 @@
+%
+% bxjacalcux.sty
+%
+
+%% package declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bxjacalcux}[2012/05/20 v0.2]
+
+%% preparations
+\def\bxjcx@pkgname{bxjacalcux}
+\def\bxjcx@error{\PackageError\bxjcx@pkgname}
+
+%% prerequisite packages
+\@tempswafalse
+\@ifpackageloaded{calc}{\@tempswatrue}{}
+\@ifpackageloaded{l3calc}{\@tempswatrue}{}
+\if@tempswa\else
+  \RequirePackage{calc}
+\fi
+\RequirePackage{bxtoolbox}
+% 
+\ifbxinpTeX
+\expandafter\endinput\fi\relax
+%
+\RequirePackage{bxcalcux}
+\RequirePackage{bxcalcize}
+
+%------------------- unit registration
+
+\@tempswafalse
+\newdimen\bxjcx@HQ \bxjcx@HQ=0.25mm
+\newdimen\bxjcx@trueHQ \bxjcx@trueHQ=0.25truemm
+\DeclareCalcUnit{Q}{\bxjcx@HQ}
+\DeclareCalcUnit{H}{\bxjcx@HQ}
+\DeclareCalcUnit{trueQ}{\bxjcx@trueHQ}
+\DeclareCalcUnit{trueH}{\bxjcx@trueHQ}
+
+\ifdef\jsDocClass{%
+\DeclareCalcUnit{zw}{\jsZw}
+\DeclareCalcUnit{zh}{\jsZw}
+}{}
+\@ifpackageloaded{luatexja-core}{%
+\DeclareCalcUnit{zw}{\zw}
+\DeclareCalcUnit{zh}{\zh}
+}{}
+
+%------------------- all done
+\endinput
+%% EOF
