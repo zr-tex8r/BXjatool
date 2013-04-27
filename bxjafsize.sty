@@ -1,0 +1,112 @@
+%
+% pxjafsize.sty
+%
+%% package declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bxjafsize}[2013/04/27 v0.2]
+
+%% preparation
+\def\bxzs@pkgname{bxjafsize}
+\def\bxzs@error{\PackageError\bxzs@pkgname}
+\def\bxzs@info{\PackageInfo\bxzs@pkgname}
+
+%---------------------------------------
+
+\begingroup
+  \def\bxzs@check#1#2{%
+    \edef\bxzs@tempa{\string#1}\edef\bxzs@tempb{\meaning#1}%
+    \ifx\bxzs@tempa\bxzs@tempb#2\fi
+  }
+  \bxzs@check\XeTeXversion{\let\bxzs@et=u}%
+  \bxzs@check\luatexversion{\let\bxzs@et=u}%
+  \bxzs@check\kanjiskip{\let\bxzs@et=j}%
+  \ifx u\bxzs@et
+    \gdef\bxzs@zsp{\char"3000}%
+  \else\ifx j\bxzs@et
+    \gdef\bxzs@zsp{\char\jis"2121}%
+  \fi\fi
+\endgroup
+\ifx\bxzs@zsp\@undefined
+  \bxzs@error{The engine in use is not supported}%
+    {Package loading is aborted.}
+\expandafter\endinput\fi\relax
+
+%---------------------------------------
+
+%% \bxzs@invscale{<dimen-reg>}{<real>}
+\mathchardef\bxzs@csta=259
+\def\bxzs@invscale#1#2{%
+  \bgroup \@tempdima=#1\relax \@tempdimb#2\p@\relax
+    \@tempcnta\@tempdima \multiply\@tempcnta\@cclvi
+    \divide\@tempcnta\@tempdimb \multiply\@tempcnta\@cclvi
+    \@tempcntb\p@ \divide\@tempcntb\@tempdimb
+    \advance\@tempcnta-\@tempcntb \advance\@tempcnta-\tw@
+    \@tempdimb\@tempcnta\@ne
+    \advance\@tempcnta\@tempcntb \advance\@tempcnta\@tempcntb
+    \advance\@tempcnta\bxzs@csta \@tempdimc\@tempcnta\@ne
+    \@whiledim\@tempdimb<\@tempdimc\do{%
+      \@tempcntb\@tempdimb \advance\@tempcntb\@tempdimc
+      \advance\@tempcntb\@ne \divide\@tempcntb\tw@
+      \ifdim #2\@tempcntb>\@tempdima
+        \advance\@tempcntb\m@ne \@tempdimc=\@tempcntb\@ne
+      \else \@tempdimb=\@tempcntb\@ne \fi}%
+    \xdef\bxzs@gtmpa{\the\@tempdimb}%
+  \egroup #1=\bxzs@gtmpa\relax}
+
+%---------------------------------------
+
+
+%%<*> \jafsscale
+\newcommand*\jafsscale{}
+\ifx\Cjascale\@undefined\else
+  \edef\jafsscale{\Cjascale}%
+\fi
+\ifx\jsScale\@undefined\else
+  \edef\jafsscale{\jsScale}%
+\fi
+\ifx\jafsscale\@empty
+  \begingroup
+    \normalfont\fontsize{10}{\z@}\selectfont
+    \setbox\z@\hbox{\bxzs@zsp}%
+    \ifdim\wd\z@>\z@
+      \@tempdima\wd\z@ \@tempdima.1\@tempdima
+      \xdef\jafsscale{\strip@pt\@tempdima}%
+    \else
+      \bxzs@error{Current font setting does not support Japanese}
+        {Package loading is aborted.}
+    \fi
+  \endgroup
+\fi
+\ifx\jafsscale\@empty
+\expandafter\endinput\fi\relax
+
+%%<*> \jafsinvscale
+\newcommand*\jafsinvscale{}
+\begingroup
+  \dimen@ii\p@
+  \bxzs@invscale\dimen@ii\jafsscale
+  \xdef\jafsinvscale{\strip@pt\dimen@ii}
+\endgroup
+
+\bxzs@info{\string\jafsscale\space set to \jafsscale}
+\bxzs@info{\string\jafsinvscale\space set to \jafsinvscale}
+
+%---------------------------------------
+
+%%<*> \jafontsize{<font-size>}{<line-skip>}
+\newcommand*\jafontsize{}
+\DeclareRobustCommand*\jafontsize[1]{%
+  \@defaultunits\@tempdimb#1pt\relax\@nnil
+  \@tempdimb\jafsinvscale\@tempdimb
+  \expandafter\fontsize\expandafter{\the\@tempdimb}%
+}
+
+%%<*> \jafssetlength\LENCMD{<dimen>}
+\newcommand*\jafssetlength[2]{%
+  \setlength#1{#2}%
+  #1=\jafsinvscale#1\relax
+}
+
+%---------------------------------------
+\endinput
+%% EOF
