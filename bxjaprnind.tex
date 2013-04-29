@@ -3,16 +3,18 @@
 \documentclass[a4paper]{ltjsarticle}
 \usepackage{shortvrb}
 \MakeShortVerb{\|}
-\newcommand{\PkgVersion}{0.2}
+\newcommand{\PkgVersion}{0.3}
 \newcommand{\Pkg}[1]{\textsf{#1}}
 \newcommand{\Meta}[1]{$\langle$\mbox{}#1\mbox{}$\rangle$}
 \newcommand{\Note}{\par\noindent ※}
 \newcommand{\Means}{~：\quad}
+\providecommand{\pTeX}{p\TeX}
+\providecommand{\upTeX}{u\pTeX}
 %-----------------------------------------------------------
 \begin{document}
 \title{\Pkg{bxjaprnind} パッケージ（v\PkgVersion）}
 \author{八登崇之\ （Takayuki YATO; aka.~``ZR''）}
-\date{2012/05/25}
+\date{2013/04/29}
 \maketitle
 
 %===========================================================
@@ -33,10 +35,10 @@
 
 \paragraph{依存パッケージ}
 \begin{itemize}
-\item \Pkg{bxoolbox} パッケージ
-  \footnote{https://github.com/zr-tex8r/BXjatool （暫定）}
-\item \Pkg{everyhook} パッケージ
-\item \Pkg{svn-proc} パッケージ
+\item \Pkg{bxtoolbox} パッケージ（\Pkg{BXbase}バンドルに含まれる）
+\item 0.3版以降は\Pkg{everyhook}パッケージに依存しなくなった。
+しかし、\Pkg{everyhook}パッケージが利用可能である場合はそれを利用する。
+\item \Pkg{everyhook}パッケージは\Pkg{svn-proc} パッケージに依存する。
 \end{itemize}
 
 %===========================================================
@@ -56,11 +58,11 @@
 \begin{itemize}
 \item |\useparheadparenindent|／|\nouseparheadparenindent|\Means
   段落頭での開き括弧調整を有効／無効にする。
-\item |\uselineheadlineenindent|／|\nouselineheadlineenindent|\Means
+\item |\uselineheadparenindent|／|\nouselineheadparenindent|\Means
   強制改行後の行頭での開き括弧調整を有効／無効にする。
   \Note 折り返しの行頭の調整には対応しない
   （これにはJFMの修正が必須）。
-  現在(u)pTeXで標準的に用いられるJFMの場合、
+  現在(u){\pTeX}で標準的に用いられるJFMの場合、
   折り返し行頭の開き括弧の前には空きは入らない。
 \item |\prnind[|\Meta{実数$r$}|]|\Means
   段落頭で用いて、当該の箇所での調整を
