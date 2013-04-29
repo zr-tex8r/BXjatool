@@ -3,7 +3,7 @@
 %
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bxjaprnind}[2012/05/14 v0.2]
+\ProvidesPackage{bxjaprnind}[2013/04/29 v0.3]
 
 \def\bxpi@pkgname{bxjaprnind}
 \def\bxpi@error{\PackageError\bxpi@pkgname}
@@ -21,37 +21,38 @@
 \catcode33=12 %
 \catcode34=12 %
 \catcode62=12 %
-\endlinechar=-1 %
 \AtEndOfPackage{%
 \bxpi@restore@codes
 \undef\bxpi@restore@codes}
 
 %------------------- setting the everypar hook
-\endlinechar=13 %
 
 \RequirePackage{bxtoolbox}
 
-%% non-e-TeX hack
-\ifbxineTeX\else        %<*!eTeX>
-% Pretends that etoolbox is loaded and gives some
-% functions of etoolbox to let everyhook work.
-\csdef{ver@etoolbox.sty}{2101/01/01}
-\let\csuse\bxCsuseX
-\let\ifcsdef\bxIfcsdef
-\let\newrobustcmd\bxNewrobustcmd
-\fi                     %</!eTeX>
+%% Checks if everyhook package is available
+\@tempswafalse
+\ifbxineTeX
+  \IfFileExists{everyhook.sty}{%
+    \@tempswatrue
+  }{}
+\fi
 
-%% Loads the package.
-\RequirePackage{everyhook}[2011/02/04]
+\if@tempswa
+  % if everyhook is available...
+  \RequirePackage{everyhook}[2011/02/04]
 
-%% non-e-TeX hack
-\ifbxineTeX\else        %<*!eTeX>
-\cslet{ver@etoolbox.sty}\@undefined
-\fi                     %</!eTeX>
+  % register the hook
+  \PushPostHook{par}{\bxpi@par@hook}
 
-%% register the hook
-\PushPostHook{par}{\bxpi@par@hook}
+\else
+  % otherwise...
+  % makes a hook to \everypar for myself
+  \let\bxpi@everypar\everypar
+  \newtoks\everypar
+  \everypar\bxpi@everypar
+  \bxpi@everypar{\the\expandafter\everypar\bxpi@par@hook}%
 
+\fi
 \endlinechar=-1 %
 %------------------- setting the newline hook
 
