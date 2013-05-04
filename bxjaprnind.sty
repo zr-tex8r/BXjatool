@@ -3,7 +3,7 @@
 %
 
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bxjaprnind}[2013/04/29 v0.3]
+\ProvidesPackage{bxjaprnind}[2013/05/05 v0.3a]
 
 \def\bxpi@pkgname{bxjaprnind}
 \def\bxpi@error{\PackageError\bxpi@pkgname}
@@ -93,16 +93,22 @@
 \def\bxpi@parhead{0}
 %% \def\bxpi@linehead
 \def\bxpi@linehead{0}
+%% \def\bxpi@dialogue
+\def\bxpi@dialogue{0.5}
 %% \def\bxpi@lineheadforce
 \def\bxpi@lineheadforce{1}
 %% \ifbxpi@d@parprnind
 \newbool{bxpi@d@parprnind}\bxpi@d@parprnindtrue
 %% \ifbxpi@d@lineprnind
 \newbool{bxpi@d@lineprnind}\bxpi@d@lineprnindtrue
+%% \ifbxpi@diaprnind
+\newbool{bxpi@diaprnind}\bxpi@diaprnindfalse
 %% \ifbxpi@prnind
 \newbool{bxpi@prnind}
 %% \ifbxpi@forceind
 \newbool{bxpi@forceind}
+%% \bxpi@choice
+\let\bxpi@choice\relax
 
 %%<*> \useparheadparenindent
 \bxNewrobustcmd*{\useparheadparenindent}{
@@ -122,6 +128,16 @@
 %%<*> \nouselineheadparenindent
 \bxNewrobustcmd*{\nouselineheadparenindent}{
   \bxpi@d@lineprnindfalse
+}
+
+%%<*> \usedialogueparenindent
+\bxNewrobustcmd*{\usedialogueparenindent}{
+  \bxpi@diaprnindtrue
+}
+
+%%<*> \nousedialogueparenindent
+\bxNewrobustcmd*{\nousedialogueparenindent}{
+  \bxpi@diaprnindfalse
 }
 
 %%<*> \parheadparenindentamount
@@ -148,6 +164,7 @@
   \leavevmode\relax
   \bxpi@prnindtrue
   \bxpi@forceindfalse
+  \let\bxpi@choice=m
   \kernel@ifnextchar[{
     \bxpi@prnind@a
   }{%else
@@ -166,6 +183,7 @@
 \def\bxpi@init@param{
   \bxpi@prnind@linedflt
   \bxpi@forceindfalse
+  \let\bxpi@choice=l
   \let\bxpi@value\bxpi@linehead
 }
 
@@ -214,6 +232,7 @@
 \def\bxpi@par@hook{
   \bxpi@prnind@pardflt
   \bxpi@forceindfalse
+  \let\bxpi@choice=p
   \let\bxpi@value\bxpi@parhead
   \bxpi@paren@indent
 }
@@ -248,6 +267,17 @@
 }
 \def\bxpi@prnindent@b#1{
   \bxpi@if@open@paren#1{
+    \ifbxpi@diaprnind
+      \if m\bxpi@choice \else
+        \bxpi@if@dia@open@paren#1{
+          \let\bxpi@value\bxpi@dialogue
+          \if p\bxpi@choice
+            {\setbox0=\lastbox}
+\bxDebug{cancel parindent}
+          \fi
+        }
+      \fi
+    \fi
     \bxpi@prnindent@c
   }
   #1
@@ -265,6 +295,13 @@
 %% \bxpi@if@open@paren
 \def\bxpi@if@open@paren#1{
   \bxIfcsundef{bxpi@P/#1}
+   {\@gobble}
+   {\@firstofone}
+}
+
+%% \bxpi@if@dia@open@paren
+\def\bxpi@if@dia@open@paren#1{
+  \bxIfcsundef{bxpi@DP/#1}
    {\@gobble}
    {\@firstofone}
 }
@@ -309,6 +346,14 @@
 \do{00AB}
 \do{301D}
 \fi
+
+%% \bxpi@DP/<char>
+\def\do#1#2{%
+  \bxToUcsCharDual{"#1}{"#2}
+  \cslet{bxpi@DP/\bxRes}{t}
+}
+\do{2156}{300C}
+\do{2158}{300E}
 
 %------------------- all done
 \endinput
