@@ -1,0 +1,55 @@
+\documentclass[a4paper]{article}
+\usepackage[scale=0.75]{geometry}
+\usepackage{shortvrb}
+\MakeShortVerb{\|}
+\newcommand{\PkgVersion}{0.2}
+\newcommand{\Pkg}[1]{\textsf{#1}}
+\newcommand{\Meta}[1]{$\langle$\textit{#1}$\rangle$}
+\newcommand{\Note}{\par\noindent \textbf{NB:}\quad}
+\newcommand{\Means}{~:\quad}
+\newcommand{\eTeX}{$\varepsilon$-{\TeX}}
+%-----------------------------------------------------------
+\begin{document}
+\title{\Pkg{bxcalcize} Package (v\PkgVersion)}
+\author{Takayuki YATO (aka.~``ZR'')}
+\date{2012/05/20}
+\maketitle
+
+%===========================================================
+\section{Overview}
+
+After loading \Pkg{calc}, most of the length specifications
+in {\LaTeX} become aware of that package--- i.e.\ 
+\Pkg{calc} expressions can be written in place of
+simple dimensions.
+However some commands remain \Pkg{calc}-unaware; for example
+one cannot use expressions in the argument of |\hspace|.
+This package patches to the kernel of {\LaTeX} and eliminates
+remaining \Pkg{calc}-unawareness
+(as far as I know).
+
+\paragraph{Supported format} \LaTeX.
+\paragraph{Supported engine} Any engine.
+\paragraph{Prerequisite packages} \Pkg{calc} package.
+
+%===========================================================
+\section{Package Loading}
+
+Use |\usepackage| as usual, with no options.
+\begin{quote}\small\begin{verbatim}
+\usepackage{bxcalcize}
+\end{verbatim}\end{quote}
+
+%===========================================================
+\section{Usage}
+
+After loading the package, one can use \Pkg{calc} expressions
+in the following places:
+\begin{itemize}
+\item the sole argument of |\hspace|(|*|), |\vspace|(|*|), 
+and |\addvspace|;
+\item the sole optional argument of |\\|.
+\end{itemize}
+
+%===========================================================
+\end{document}
