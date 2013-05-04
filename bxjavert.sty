@@ -1,0 +1,647 @@
+%
+% bxjavert.sty
+%
+%% package declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bxjavert}[2013/05/05 v0.2]
+
+%% preparations
+\def\bxvw@pkgname{bxjavert}
+\def\bxvw@error{\PackageError\bxvw@pkgname}
+\def\bxvw@warn{\PackageWarning\bxvw@pkgname}
+
+%--------------------------------------- engine check
+
+\def\bxvw@next#1#2{%
+  \expandafter\let\csname#1\expandafter\endcsname\csname#2\endcsname
+}
+\edef\bxvw@tempa{\string\tate}
+\edef\bxvw@tempb{\meaning\tate}
+\ifx\bxvw@tempa\bxvw@tempb
+  % ok, I am pTeX
+  \let\bxvw@p@tate\tate
+  \let\bxvw@p@yoko\yoko
+  \bxvw@next{ifbxvw@p@ydir}{ifydir}
+  \bxvw@next{ifbxvw@p@tdir}{iftdir}
+  \bxvw@next{ifbxvw@in@pTeX}{iftrue}
+\else
+  % I am not pTeX; this package will not work!
+  \let\bxvw@p@tate\relax
+  \let\bxvw@p@yoko\relax
+  \bxvw@next{ifbxvw@p@ydir}{iftrue}
+  \bxvw@next{ifbxvw@p@tdir}{iffalse}
+  \bxvw@next{ifbxvw@in@pTeX}{iffalse}
+  \bxvw@warn{The engine in use is not pTeX}
+  \typeout{!!!!!!!!!! WARNING !!!!!!!!!!^^J%
+  The current 'bxjavert' package works properly only in vertical mode
+  of pTeX^^Jand thus of no use when using a non-pTeX engine.
+  }
+\fi
+
+%--------------------------------------- definitions
+
+%% error messages
+\def\bxvw@err@mtrel{%
+  \bxvw@error{A real value is missing}\@ehc
+}
+\def\bxvw@err@ivrel{%
+  \bxvw@error{A real value is of wrong format}\@ehc
+}
+\def\bxvw@warn@ovful#1{%
+  \bxvw@warn{Tate-chu-yoko box is overfull\MessageBreak
+    (#1\space too wide)}%
+}
+\def\bxvw@err@uxopt{%
+  \bxvw@error{Unexpected token in option list}\@ehc
+}
+
+%% variables
+\newif\ifVTOk
+\newif\ifbxvw@fail
+\newif\ifbxvw@starred
+\newif\ifbxvw@star@ignored
+\newdimen\bxvw@dim@tempa
+\newdimen\bxvw@dim@ht
+\newdimen\bxvw@dim@dp
+\newdimen\bxvw@zw
+
+%% parameters
+\newif\ifbxvw@warn@overfull \bxvw@warn@overfullfalse
+\def\bxvw@shift{0.025}
+\def\bxvw@shift@alt{0}
+\def\bxvw@maxoverhang{0.5}
+\def\bxvw@maxoverhang@alt{0.5}
+\def\bxvw@height{0.88}
+\def\bxvw@depth{0.12}
+\def\bxvw@base@width{1}
+\def\bxvw@top@pad{0}
+\def\bxvw@bot@pad{0}
+\let\bxvw@tcy@font@setup\@empty
+\let\bxvw@svo@font@setup\@empty
+\newif\ifbxvw@overhang \bxvw@overhangtrue
+\let\bxvw@halign@opt=c
+\let\bxvw@shift@opt=v
+\let\bxvw@overfull@opt=s
+
+%--------------------------------------- public commands
+
+%%<*> \svowarnoverfull
+\newcommand*\svowarnoverfull{%
+  \bxvw@warn@overfulltrue
+}
+%%<*> \nosvowarnoverfull
+\newcommand*\nosvowarnoverfull{%
+  \bxvw@warn@overfullfalse
+}
+%%<*> \setsvoshift{<real>}
+\newcommand*\setsvoshift{%
+  \bxvw@set@real\bxvw@shift
+}
+%%<*> \setsvoshiftalt{<real>}
+\newcommand*\setsvoshiftalt{%
+  \bxvw@set@real\bxvw@shift@alt
+}
+%%<*> \setsvomaxoverhang{<real>}
+\newcommand*\setsvomaxoverhang{%
+  \bxvw@set@real\bxvw@maxoverhang
+}
+%%<*> \setsvomaxoverhangoneside{<real>}
+\newcommand*\setsvomaxoverhangoneside{%
+  \bxvw@set@real\bxvw@maxoverhang@alt
+}
+%%<*> \setsvoheight{<real>}
+\newcommand*\setsvoheight{%
+  \bxvw@set@real\bxvw@height
+}
+%%<*> \setsvodepth{<real>}
+\newcommand*\setsvodepth{%
+  \bxvw@set@real\bxvw@depth
+}
+%%<*> \setsvobasewidth{<real>}
+\newcommand*\setsvobasewidth{%
+  \bxvw@set@real\bxvw@base@width
+}
+%%<*> \setsvotoppadding{<real>}
+\newcommand*\setsvotoppadding{%
+  \bxvw@set@real@opt\bxvw@top@pad
+}
+%%<*> \setsvobottompadding{<real>}
+\newcommand*\setsvobottompadding{%
+  \bxvw@set@real@opt\bxvw@bot@pad
+}
+%%<*> \tcyfontsetup{<text>}
+\newcommand*\tcyfontsetup[1]{%
+  \def\bxvw@tcy@font@setup{#1}%
+}
+%%<*> \svofontsetup{<text>}
+\newcommand*\svofontsetup[1]{%
+  \def\bxvw@svo@font@setup{#1}%
+}
+%%<*> \svosetup{<option>}
+\newcommand*\svosetup[1]{%
+  \bxvw@parse@option{#1}%
+}
+
+%%<*> \tcy[*][<option>]{<text>}
+\DeclareRobustCommand*\tcy{%
+  \let\bxvw@proc@switch\bxvw@proc@tcy
+  \bxvw@ufvo
+}
+
+%%<*> \svo[*][<option>]{<text>}
+\DeclareRobustCommand*\svo{%
+  \let\bxvw@proc@switch\bxvw@proc@svo
+  \bxvw@ufvo
+}
+
+%--------------------------------------- helpers
+
+%% unique tokens
+\def\bxvw@mark{\bxvw@mark@}
+\def\bxvw@end{\bxvw@end@}
+
+%% \bxvw@ifblank{<text>}
+\def\bxvw@ifblank#1{%
+  \bxvw@ifblank@a#1\bxvw@mark\bxvw@mark
+   \@secondoftwo\@firstoftwo\bxvw@end
+}
+\def\bxvw@ifblank@a#1#2\bxvw@mark#3#4#5\bxvw@end{%
+  #4%
+}
+
+%% \bxvw@set@real\CS{<real>}
+\def\bxvw@set@real#1{%
+  \bxvw@set@real@a#1%
+   {\bxvw@err@mtrel}%
+}
+%% \bxvw@set@real@opt\CS{<real>}
+\def\bxvw@set@real@opt#1{%
+  \bxvw@set@real@a#1%
+   {\let#1\@empty}%
+}
+\def\bxvw@set@real@a#1#2#3{%
+  \bxvw@ifblank{#3}{#2}{%
+    \def\bxvw@tempa{\edef#1}%
+    \afterassignment\bxvw@set@real@b
+    \bxvw@dim@tempa=#3\p@\bxvw@end
+  }%
+}
+\def\bxvw@set@real@b#1\bxvw@end{%
+  \ifx\bxvw@end#1\bxvw@end
+    \bxvw@tempa{\strip@pt\bxvw@dim@tempa}%
+  \else \bxvw@err@ivrel
+  \fi
+}
+
+%--------------------------------------- resize box
+
+%% \bxvw@resizebox
+\def\bxvw@resizebox{%
+  \bxvw@if@graphicx@loaded{%
+    \global\let\bxvw@resizebox\resizebox
+  }{%
+    \bxvw@error{Package 'graphicx' is nessesary here}\@ehc
+    \global\let\bxvw@resizebox\bxvw@dummy@resizebox
+  }%
+  \global\let\bxvw@dummy@resizebox\@undefined
+  \bxvw@resizebox
+}
+\def\bxvw@dummy@resizebox#1#2#3{%
+  \begingroup
+    \setbox\z@\hbox{#3}%
+    \def\width{\wd\z@}\def\height{\ht\z@}%
+    \wd\z@=#1\relax \ht\z@=#2\relax
+    \box\z@
+  \endgroup
+}
+
+%% \bxvw@if@graphicx@loaded
+\def\bxvw@if@graphicx@loaded{%
+  \@ifpackageloaded{graphics}%
+}
+\AtBeginDocument{%
+  \@ifpackageloaded{graphics}{%
+    \let\bxvw@if@graphicx@loaded\@firstoftwo
+  }{%
+    \let\bxvw@if@graphicx@loaded\@secondoftwo
+  }%
+}
+
+%--------------------------------------- vertical fit box
+
+%% \MakeVertFitBox{<height>}{<depth>}{<shift>}{<text>}
+\newcommand\MakeVertFitBox[4]{%
+  \begingroup
+    \let\bxvw@eff@shift\@empty
+    \let\bxvw@eff@compress\@empty
+    \bxvw@dim@ht=#1\relax
+    \bxvw@dim@dp=#2\relax
+    \setbox\z@\hbox{#4}%
+    \bxvw@get@shift@handler{#3}%
+    \ifx\bxvw@shift@handler\relax
+      \ifx\bxvw@bot@pad\@empty
+        \@tempdima=#3\relax
+      \else
+        \@tempdima\dp\z@
+        \advance\@tempdima-\bxvw@dim@dp
+        \advance\@tempdima\bxvw@bot@pad\bxvw@zw
+        \@tempdimb=#3\relax
+        \ifdim\@tempdima<\@tempdimb
+          \@tempdima\@tempdimb
+        \fi
+      \fi
+    \else
+      \def\bxvw@text{#4}%
+      \@tempdima\z@
+      \bxvw@shift@handler
+    \fi
+    \ifdim\@tempdima=\z@\else
+      \edef\bxvw@eff@shift{\noexpand\raise\the\@tempdima}%
+    \fi
+    \advance\@tempdima\ht\z@
+    \ifx\bxvw@top@pad\@empty\else
+      \@tempdimb\bxvw@dim@ht
+      \advance\@tempdimb-\bxvw@top@pad\bxvw@zw
+      \ifdim\@tempdimb<\@tempdima
+        \edef\bxvw@eff@compress{%
+          \noexpand\bxvw@resizebox{\noexpand\width}%
+           {\the\@tempdimb}%
+        }%
+      \fi
+    \fi
+    \setbox\z@\hbox{%
+      \bxvw@eff@compress{\bxvw@eff@shift\box\z@}%
+    }%
+    \ht\z@\bxvw@dim@ht
+    \dp\z@\bxvw@dim@dp
+    \box\z@
+  \endgroup
+}
+
+\def\bxvw@get@shift@handler#1{%
+  \edef\bxvw@args{#1}%
+  \expandafter\bxvw@get@shift@handler@a\bxvw@args\@empty\bxvw@end
+}
+\def\bxvw@get@shift@handler@a#1#2\bxvw@end{%
+  \let\bxvw@shift@handler\relax
+  \if#1*\relax
+    \expandafter\let\expandafter\bxvw@shift@handler
+     \csname bxvw@shift@@#2\endcsname
+  \fi
+}
+\def\bxvw@shift@@z{%
+  \@tempdima\z@
+  \let\bxvw@top@pad\@empty
+  \let\bxvw@bot@pad\@empty
+}
+
+\def\bxvw@shift@@a{%
+  \@tempdimc\bxvw@dim@ht
+  \advance\@tempdimc-\bxvw@dim@dp
+  \advance\@tempdimc-\ht\z@
+  \advance\@tempdimc\dp\z@
+  \@tempdima.5\@tempdimc
+  \let\bxvw@top@pad\@empty
+  \let\bxvw@bot@pad\@empty
+}
+
+\def\bxvw@shift@@n{%
+  \setbox\tw@\hbox{%
+    \bxvw@text
+    \setbox\tw@\hbox{5}%
+    \@tempdima\ht\tw@
+    \setbox\tw@\hbox{2}%
+    \advance\@tempdima-\dp\tw@
+    \xdef\bxvw@g@tempa{\the\@tempdima}%
+  }%
+  \@tempdimc\bxvw@dim@ht
+  \advance\@tempdimc-\bxvw@dim@dp
+  \advance\@tempdimc-\bxvw@g@tempa\relax
+  \@tempdima.5\@tempdimc
+  \let\bxvw@top@pad\@empty
+  \let\bxvw@bot@pad\@empty
+}
+
+%--------------------------------------- 
+
+%%<+> \TateChuYoko{<overhang>}{<h-align>}{<overfull>}
+%      {<max-overhang>}{<preproc>}{<text>}
+\newcommand*\TateChuYoko[3]{%
+  \def\bxvw@tempa{\noexpand\bxvw@end}%
+  \edef\bxvw@args{#1t\bxvw@tempa#2c\bxvw@tempa#3s\bxvw@tempa}%
+  \expandafter\bxvw@tcyblock@a\bxvw@args
+}
+\def\bxvw@tcyblock@a#1#2\bxvw@end#3#4\bxvw@end#5#6\bxvw@end{%
+  \bxvw@tcyblock@b#1#3#5%
+}
+\long\def\bxvw@tcyblock@b#1#2#3#4#5#6{%
+  \VTOkfalse
+  \ifbxvw@p@tdir
+    \begingroup
+      \bxvw@failfalse
+      \let\bxvw@eff@compress\@empty
+      \setbox\z@\hbox{\bxvw@p@yoko#6}%
+      \bxvw@dim@ht\ht\z@ \advance\bxvw@dim@ht\dp\z@
+      \@tempdimb=#4\relax
+      \@tempdima=\bxvw@base@width\bxvw@zw
+      \advance\@tempdima \ifx c#2\tw@\else\@ne\fi\@tempdimb
+      \ifdim\@tempdima<\bxvw@dim@ht
+        \ifbxvw@warn@overfull
+          \begingroup
+            \advance\bxvw@dim@ht-\@tempdima
+            \bxvw@warn@ovful{\the\bxvw@dim@ht}%
+          \endgroup
+        \fi
+        \ifx i#3%
+          \bxvw@dim@ht\@tempdima
+        \else\ifx s#3%
+          \bxvw@dim@ht\@tempdima
+          \edef\bxvw@eff@compress{%
+            \noexpand\bxvw@resizebox{\the\@tempdima}{\noexpand\height}%
+          }%
+        \else
+          \bxvw@failtrue
+        \fi\fi
+      \fi
+      \ifx c#2%
+        \let\bxvw@ledge\hss \let\bxvw@redge\hss
+        \bxvw@dim@ht.5\bxvw@dim@ht
+        \bxvw@dim@dp\bxvw@dim@ht
+      \else\ifx l#2%
+        \let\bxvw@ledge\@empty \let\bxvw@redge\hss
+        \bxvw@dim@dp.5\bxvw@zw
+        \advance\bxvw@dim@ht-\bxvw@dim@dp
+      \else\ifx r#2%
+        \let\bxvw@ledge\hss \let\bxvw@redge\@empty
+        \bxvw@dim@dp\bxvw@dim@ht
+        \bxvw@dim@ht.5\bxvw@zw
+        \advance\bxvw@dim@dp-\bxvw@dim@ht
+      \else
+        \bxvw@failtrue
+      \fi\fi\fi
+      \ifbxvw@fail\else
+        #5\leavevmode
+        \ifx t#1%
+          \vrule\@width\z@\@height\bxvw@dim@ht\@depth\bxvw@dim@dp
+        \fi
+        \hb@xt@\bxvw@base@width\bxvw@zw{%
+          \bxvw@p@yoko\bxvw@ledge\bxvw@eff@compress{\box\z@}\bxvw@redge
+        }%
+        \aftergroup\VTOktrue
+      \fi
+    \endgroup
+  \fi
+}
+
+%--------------------------------------- option parse
+% halign = l / c / r
+% shift  = v / V  / a / n
+% overfull = s / i / f
+% overhang = h / H
+
+\def\bxvw@parse@option#1{%
+  \edef\bxvw@args{#1}%
+  \expandafter\bxvw@parse@option@lp@a\bxvw@args\bxvw@end
+}
+\def\bxvw@parse@option@lp@a{%
+  \futurelet\bxvw@tok\bxvw@parse@option@lp@b
+}
+\def\bxvw@parse@option@lp@b{%
+  \ifx\bxvw@tok\bxvw@end
+    \let\bxvw@next\bxvw@parse@option@fn
+  \else\ifx\bxvw@tok\@sptoken
+    \let\bxvw@next\bxvw@parse@option@lp@c
+  \else\ifx\bxvw@tok\bgroup
+    \let\bxvw@next\bxvw@parse@option@er
+  \else
+    \let\bxvw@next\bxvw@parse@option@lp@d
+  \fi\fi\fi
+  \bxvw@next
+}
+\def\bxvw@next#1{%
+  \def\bxvw@parse@option@lp@c#1{%
+    \bxvw@parse@option@lp@d
+  }%
+}
+\bxvw@next{ }
+\def\bxvw@parse@option@lp@d#1{%
+  \expandafter\let\expandafter\bxvw@next
+   \csname bxvw@opt@@\string#1\endcsname
+  \ifx\bxvw@next\relax
+    \let\bxvw@next\bxvw@parse@option@er
+  \else
+    \bxvw@next
+    \let\bxvw@next\bxvw@parse@option@lp@a
+  \fi
+  \bxvw@next
+}
+\def\bxvw@parse@option@er{%
+  \bxvw@err@uxopt
+  \bxvw@parse@option@fn
+}
+\def\bxvw@parse@option@fn#1\bxvw@end{%
+%  \typeout{%
+%    halign=\meaning\bxvw@halign@opt^^J%
+%    shift=\meaning\bxvw@shift@opt^^J%
+%    overfull=\meaning\bxvw@overfull@opt^^J%
+%    hangover=\meaning\ifbxvw@overhang}%
+}
+%%
+\def\bxvw@opt@@l{\let\bxvw@halign@opt=l}
+\def\bxvw@opt@@c{\let\bxvw@halign@opt=c}
+\def\bxvw@opt@@r{\let\bxvw@halign@opt=r}
+\def\bxvw@opt@@v{\let\bxvw@shift@opt=v}
+\def\bxvw@opt@@V{\let\bxvw@shift@opt=V}
+\def\bxvw@opt@@a{\let\bxvw@shift@opt=a}
+\def\bxvw@opt@@n{\let\bxvw@shift@opt=n}
+\def\bxvw@opt@@z{\let\bxvw@shift@opt=z}
+\def\bxvw@opt@@s{\let\bxvw@overfull@opt=s}
+\def\bxvw@opt@@i{\let\bxvw@overfull@opt=i}
+\def\bxvw@opt@@f{\let\bxvw@overfull@opt=f}
+\def\bxvw@opt@@h{\bxvw@overhangtrue}
+\def\bxvw@opt@@H{\bxvw@overhangfalse}
+
+%--------------------------------------- main entry
+
+%% \bxvw@proc@switch
+\let\bxvw@proc@switch\@empty
+%% \bxvw@parse@text
+\let\bxvw@parse@text\@empty
+
+%% \bxvw@ufvo
+\def\bxvw@ufvo{%
+  \@ifstar{\bxvw@starredtrue\bxvw@ufvo@a}%
+   {\bxvw@starredfalse\bxvw@ufvo@a}%
+}
+\def\bxvw@ufvo@a{%
+  \begingroup
+    \bxvw@failfalse
+    \ifbxvw@star@ignored\else
+      \ifbxvw@starred \bxvw@overhangfalse
+      \else \bxvw@overhangtrue
+      \fi
+    \fi
+    \@ifnextchar[%]
+     {\bxvw@ufvo@b}%
+     {\bxvw@ufvo@c}%
+}
+\def\bxvw@ufvo@b[#1]{%
+    \bxvw@parse@option{#1}%
+    \ifbxvw@p@tdir\else
+      \bxvw@failfalse
+    \fi
+    \bxvw@ufvo@c
+}
+\def\bxvw@ufvo@c#1{%
+    \ifbxvw@fail
+      #1% plain output
+    \else
+      \bxvw@get@zw@width
+      \bxvw@proc@switch % NB:this may change font
+      \bxvw@parse@text\bxvw@block@list{#1}%
+      \bxvw@ufvo@main
+    \fi
+  \endgroup
+}
+
+\ifbxvw@in@pTeX
+  \def\bxvw@get@zw@width{%
+    \bxvw@zw=1zw\relax
+  }
+\else
+  \def\bxvw@get@zw@width{%
+    \bxvw@zw=1em\relax
+  }
+\fi
+
+%--------------------------------------- main main
+
+\let\bxvw@in@guard=f
+\let\bxvw@at@guard@top=f
+
+\ifbxvw@in@pTeX
+  \chardef\bxvw@jghost@char=\jis"2121
+\fi
+
+\def\bxvw@enter@guard{%
+  \ifx t\bxvw@in@guard\else
+    \bxvw@jghost@char
+    \kern-\@ne\bxvw@zw
+    \let\bxvw@in@guard=t%
+    \let\bxvw@at@guard@top=t%
+  \fi
+}
+\def\bxvw@leave@guard{%
+  \ifx t\bxvw@in@guard
+    \let\bxvw@in@guard=f%
+    \let\bxvw@at@guard@top=f%
+    \kern-\@ne\bxvw@zw
+    \bxvw@jghost@char
+  \fi
+}
+
+\def\bxvw@ufvo@main{%
+  \let\bxvw@in@guard=f%
+  \edef\bxvw@overhang@{%
+    \ifbxvw@overhang t\else f\fi
+  }%
+  \edef\bxvw@shift@{%
+    \ifx v\bxvw@shift@opt \bxvw@shift\bxvw@zw
+    \else\ifx a\bxvw@shift@opt *a%
+    \else\ifx n\bxvw@shift@opt *n%
+    \else\ifx z\bxvw@shift@opt *z%
+    \else \bxvw@shift@alt\bxvw@zw
+    \fi\fi\fi\fi
+  }%
+  \edef\bxvw@maxoverhang@{%
+    \ifx c\bxvw@halign@opt \bxvw@maxoverhang
+    \else \bxvw@maxoverhang@alt
+    \fi
+  }%
+  \bxvw@block@list
+  \bxvw@leave@guard
+}
+
+%% \bxvw@block{<text>}
+\def\bxvw@block#1{%
+  \TateChuYoko\bxvw@overhang@\bxvw@halign@opt\bxvw@overfull@opt
+   {\bxvw@maxoverhang@\bxvw@zw}{\bxvw@preproc@block}%
+   {\MakeVertFitBox{\bxvw@height\bxvw@zw}{\bxvw@depth\bxvw@zw}%
+     {\bxvw@shift@}{#1}}%
+  \ifVTOk\else
+    \bxvw@leave@guard
+    \bgroup#1\egroup
+  \fi
+}
+
+%% \bxvw@preproc@block
+\def\bxvw@preproc@block{%
+  \ifx t\bxvw@in@guard
+    \hskip\bxvw@iiskip
+  \else
+    \bxvw@enter@guard
+    \aftergroup\bxvw@in@guard@true
+  \fi
+}
+\def\bxvw@in@guard@true{%
+  \let\bxvw@in@guard=t%
+}
+
+%% \bxvw@iiskip
+\ifbxvw@in@pTeX
+  \let\bxvw@iiskip\kanjiskip
+\fi
+
+%--------------------------------------- tcy-specific
+
+\def\bxvw@proc@tcy{%
+  \let\bxvw@parse@text\bxvw@parse@text@tcy
+  \bxvw@tcy@font@setup
+}
+
+\def\bxvw@parse@text@tcy#1#2{%
+  \def#1{\bxvw@block{#2}}%
+}
+
+%--------------------------------------- svo-specific
+
+\def\bxvw@proc@svo{%
+  \let\bxvw@parse@text\bxvw@parse@text@svo
+  \bxvw@svo@font@setup
+}
+
+\def\bxvw@parse@text@svo#1#2{%
+  \global\let\bxvw@g@tempa\@empty
+  \bxvw@parse@text@svo@a#2\bxvw@end
+  \let#1\bxvw@g@tempa
+}
+\def\bxvw@parse@text@svo@a{%
+  \futurelet\bxvw@tok\bxvw@parse@text@svo@b
+}
+\def\bxvw@parse@text@svo@b{%
+  \ifx\bxvw@tok\bxvw@end
+    \let\bxvw@next\bxvw@parse@text@svo@fn
+  \else\ifx\bxvw@tok\@sptoken
+    \let\bxvw@next\bxvw@parse@text@svo@c
+  \else
+    \let\bxvw@next\bxvw@parse@text@svo@d
+  \fi\fi
+  \bxvw@next
+}
+\def\bxvw@next#1{%
+  \def\bxvw@parse@text@svo@c#1{%
+    \bxvw@parse@text@svo@d{ }%
+  }%
+}
+\bxvw@next{ }
+\def\bxvw@parse@text@svo@d#1{%
+  \g@addto@macro\bxvw@g@tempa{\bxvw@block{#1}}%
+  \bxvw@parse@text@svo@a
+}
+\def\bxvw@parse@text@svo@fn#1\bxvw@end{%
+%\typeout{parsed:\meaning\bxvw@g@tempa}%
+}
+
+%--------------------------------------- all done
+\endinput
+%% EOF
