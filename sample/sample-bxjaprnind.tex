@@ -77,6 +77,7 @@
 \verb|\parheadparenindentamount{-0.5}\lineheadparenindentamount{0.5}|。
 \item 鉤括弧以外の括弧にも効くのでグローバル設定には不適切であるが、
 この設定にする環境を作る等の方法が考えられる。
+\item やっぱり不便なので次節の機能を作った。
 \end{itemize}
 \begin{center}
 \fbox{\begin{minipage}{10zw}
@@ -91,7 +92,40 @@
 \end{minipage}}%
 \end{center}
 
+%-------------------
+\section{会話の鉤括弧のための特別な処理}
+\newcommand\SampleTextD{%
+□□□、□□□□□□□□□。\par
+「□□□□？」\\
+「□□□。□□！」\\
+「□□□□□□。□□□□□□□□□□□□□□」\\
+「□□□□□□□！」\par
+（□□□）□□□□、□□□□□□。\par
+}
 
+\begin{itemize}
+\item ソースでは各台詞の間に強制改行が入れられている。
+（その前後は改段落している。）
+\item 左は既定の設定。
+\item 右は \verb|\usedialogueparenindent|。
+\item 鉤括弧だけ \verb|\dialogueparenindentamount| で指定した字下げ量
+（既定は半角）になり、さらに段落下げが無効になる。
+鉤括弧以外の括弧の処理は通常通り。
+\item 鉤括弧を通常の括弧として扱いたい場合は、直前に \verb|\prnind|
+を置けばよい。
+\end{itemize}
+\begin{center}
+\fbox{\begin{minipage}{10zw}
+  \setlength{\parindent}{1zw}
+  \SampleTextD
+\end{minipage}}%
+\hspace{4zw}
+\usedialogueparenindent
+\fbox{\begin{minipage}{10zw}
+  \setlength{\parindent}{1zw}
+  \SampleTextD
+\end{minipage}}%
+\end{center}
 
 \end{document}
 
