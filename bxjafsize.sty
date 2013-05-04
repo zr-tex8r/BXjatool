@@ -111,7 +111,7 @@
 %%<*> \jafs{<dimen>} (fully-expandable)
 \ifx t\bxzs@etex
 \newcommand*\jafs[1]{%
-  \jafsinvscale\dimexpr#1\relax
+  \dimexpr\jafsinvscale\dimexpr#1\relax\relax
 }
 \fi
 
