@@ -4,7 +4,7 @@
 
 %% package declaration
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bxcalcux}[2012/05/20 v0.2]
+\ProvidesPackage{bxcalcux}[2013/05/05 v0.3]
 
 %% preparations
 \def\bxcx@pkgname{bxcalcux}
@@ -71,6 +71,10 @@
 }
 
 %------------------- unit registration
+
+\newcommand*\newcalcunit[2]{
+  \DeclareCalcUnit{#1}{\dimexpr#2\relax}
+}
 
 \newcommand*\DeclareCalcUnit[2]{
   \edef\bxcx@tempa{#1}
