@@ -1,0 +1,84 @@
+% 文字コードは UTF-8
+% lualatex で組版する（LuaTeX-ja 使用）
+\documentclass[a4paper]{ltjsarticle}
+\usepackage[ipaex]{luatexja-preset}
+\usepackage{metalogo}
+\usepackage{shortvrb}
+\MakeShortVerb{\|}
+\newcommand{\PkgVersion}{0.2a}
+\newcommand{\Pkg}[1]{\textsf{#1}}
+\newcommand{\Meta}[1]{$\langle$\mbox{}#1\mbox{}$\rangle$}
+\newcommand{\Note}{\par\noindent ※}
+\newcommand{\Means}{~：\quad}
+\providecommand{\pTeX}{p\TeX}
+\providecommand{\upTeX}{u\pTeX}
+%-----------------------------------------------------------
+\begin{document}
+\title{\Pkg{bxjacalcux} パッケージ（v\PkgVersion）}
+\author{八登崇之\ （Takayuki YATO; aka.~``ZR''）}
+\date{2013/05/05}
+\maketitle
+
+%===========================================================
+\section{概要}
+
+{\pTeX}系エンジンの独自拡張である |zw| や |Q| 等の長さ単位を
+他のエンジン上の{\LaTeX}でも使用可能にする。
+
+\paragraph{対応フォーマット} \LaTeX。
+\paragraph{対応エンジン} 全て。
+ただし日本語対応環境以外では機能制限がある。
+
+\paragraph{依存パッケージ}
+\begin{itemize}
+\item 本パッケージと同じバンドルに含まれる
+\Pkg{bxcalcize}、\Pkg{bxcalcux}。
+\item \Pkg{bxtoolbox} パッケージ（\Pkg{BXbase}バンドルに含まれる）
+\item \Pkg{calc}パッケージ
+\end{itemize}
+
+%===========================================================
+\section{パッケージの読込}
+
+|\usepackage| で読み込む。
+オプションはない。
+\begin{verbatim}
+\usepackage{bxjacalcux}
+\end{verbatim}
+
+%===========================================================
+\section{機能}
+
+{\LaTeX}において長さを指定するほとんどの箇所
+\footnote{正確には「\Pkg{calc}パッケージの数式が使用可能な箇所」である。
+ただし、\Pkg{bxcalcize}パッケージで拡張されているので
+標準の{\LaTeX}命令についてはほぼ完全対応だと思われる。
+\Pkg{TikZ}パッケージのように独自の数式解析器ライブラリを
+用いているものは残念ながら対象外となる。}
+において以下にあげる「{\pTeX}独自の長さ単位」が使えるようになる。
+\begin{itemize}
+\item |Q|、|H|： |0.25mm| に等しい。
+\item |trueQ|、|trueH|： |0.25truemm| に等しい。
+\item |zw|、|zh|： 以下の環境でのみ使用可能。
+\begin{itemize}
+\item （{\pTeX}系では元々使用可能である。）
+\item {\LuaTeX}-jaを使用する場合は、各々 |\zw|、|\zh| と等しくなる。
+\item \Pkg{BXjscls}バンドルの文書クラスを使用する場合は、
+ともに |\jsZw| と等しくなる。
+\end{itemize}
+\end{itemize}
+
+%===========================================================
+\section{詳細説明}
+
+このパッケージは以下のように動作している。
+\begin{enumerate}
+\item \Pkg{calc}、\Pkg{bxcalcize}、\Pkg{bxcalcux}パッケージを読み込む。
+\item 前述の「{\pTeX}の単位」を\Pkg{bxcalcux}の|\DeclareCalcUnit|命令を
+利用して定義する。
+\end{enumerate}
+
+なお、エンジンが{\pTeX}系である場合は 2 の動作は行わないが、
+他のエンジンとの挙動を合わせるため 1 は行っている。
+
+\end{document}
