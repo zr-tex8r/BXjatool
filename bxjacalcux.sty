@@ -4,7 +4,7 @@
 
 %% package declaration
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bxjacalcux}[2012/05/20 v0.2]
+\ProvidesPackage{bxjacalcux}[2013/05/05 v0.2a]
 
 %% preparations
 \def\bxjcx@pkgname{bxjacalcux}
@@ -18,12 +18,12 @@
   \RequirePackage{calc}
 \fi
 \RequirePackage{bxtoolbox}
-% 
-\ifbxinpTeX
-\expandafter\endinput\fi\relax
 %
 \RequirePackage{bxcalcux}
 \RequirePackage{bxcalcize}
+%
+\ifbxinpTeX
+\expandafter\endinput\fi\relax
 
 %------------------- unit registration
 
