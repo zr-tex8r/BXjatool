@@ -1,6 +1,8 @@
 % 文字コードは UTF-8
 % lualatex で組版する（LuaTeX-ja 使用）
 \documentclass[a4paper]{ltjsarticle}
+\usepackage[ipaex]{luatexja-preset}
+\usepackage{metalogo}
 \usepackage{shortvrb}
 \MakeShortVerb{\|}
 \newcommand{\PkgVersion}{0.3}
@@ -31,6 +33,17 @@
   著者が予め設定した量に自動的に調整する。
 \item 強制改行命令（|\\|）のオプションとして
   改行後に予め設定した量の字下げを行えるようにする。
+\end{itemize}
+
+\paragraph{対応環境}
+\begin{itemize}
+\item {\TeX}フォーマット： \LaTeX。
+\item {\TeX}エンジン： 次の何れか。
+\begin{itemize}
+\item {\pTeX}またはその拡張。
+\item {\XeTeX}（\Pkg{ZXjatype}パッケージ使用時）
+\item {\LuaTeX}（\Pkg{LuaTeX-ja}パッケージ使用時）
+\end{itemize}
 \end{itemize}
 
 \paragraph{依存パッケージ}
