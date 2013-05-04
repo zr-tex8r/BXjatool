@@ -1,0 +1,86 @@
+\documentclass[a4paper]{article}
+\usepackage[scale=0.75]{geometry}
+\usepackage{shortvrb}
+\MakeShortVerb{\|}
+\newcommand{\PkgVersion}{0.3}
+\newcommand{\Pkg}[1]{\textsf{#1}}
+\newcommand{\Meta}[1]{$\langle$\textit{#1}$\rangle$}
+\newcommand{\Note}{\par\noindent \textbf{NB:}\quad}
+\newcommand{\Means}{~:\quad}
+\newcommand{\eTeX}{$\varepsilon$-{\TeX}}
+%-----------------------------------------------------------
+\begin{document}
+\title{\Pkg{bxcalcux} Package (v\PkgVersion)}
+\author{Takayuki YATO (aka.~``ZR'')}
+\date{2013/05/05}
+\maketitle
+
+%===========================================================
+\section{Overview}
+
+This package allows one to create a new unit of length
+that can be used in length expressions
+of the  \Pkg{calc} package.
+For example,
+\begin{quote}\small\begin{verbatim}
+\newcalcunit{thou}{0.07227pt}% thousandth of inch
+\setlength{\lengthA}{10thou}
+\end{verbatim}\end{quote}
+will assign 0.72266\,pt to |\lengthA|.%
+\footnote{Note that using \texttt{0.001in} instead of
+\texttt{0.07227pt} will give rather inaccurate results,
+since \texttt{0.001in} is evaluated to 0.7277\,pt.}
+
+\paragraph{Supported format} \LaTeX.
+\paragraph{Supported engine} Any engine, but some commands
+(including |\newcalcunit|) requires \eTeX.
+\paragraph{Prerequisite packages} \Pkg{calc} package.
+
+%===========================================================
+\section{Package Loading}
+
+Use |\usepackage| as usual, with no options.
+\begin{quote}\small\begin{verbatim}
+\usepackage{bxcalcux}
+\end{verbatim}\end{quote}
+
+%===========================================================
+\section{Usage}
+
+\begin{itemize}
+\item |\newcalcunit{|\Meta{unit}|}{|\Meta{dimen}|}|\Means
+Declares a new unit \Meta{unit} as equal to \Meta{dimen}.
+The unit name must consist only of alphabets.
+You can use relative units such as |0.5em| in \Meta{dimen},
+and such relative units are resolved in
+evaluating \Pkg{calc} expressions.
+This command is only available on {\eTeX}-extended engines.
+
+\item |\DeclareCalcUnit{|\Meta{unit}|}{|\Meta{text}|}|\Means
+Declares a new unit \Meta{unit} as equal to the unit
+expressed by a token string \Meta{text},
+which must form a ``unit of dimen'' (in {\TeX} terminology).
+Here is an example.
+\begin{quote}\small\begin{verbatim}
+\DeclareCalcUnit{ls}{\baselineskip}% current line skip
+\end{verbatim}\end{quote}
+This command does \emph{not} require \eTeX.
+
+\end{itemize}
+
+%===========================================================
+\section{Notices}
+
+\begin{itemize}
+\item Usually unit names are treated as case-insensitive;
+but as exception, unit names with a single letter are
+case-sensitive.
+\item You must not create a unit name that coincides
+with a prefix of existing (built-in or created) units
+or any keywords that could be used in \Pkg{calc} expressions
+(such as |plus|, |fil|, etc.); otherwise unexpected
+things would occur.
+\end{itemize}
+
+%===========================================================
+\end{document}
