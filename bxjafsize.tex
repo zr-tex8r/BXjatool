@@ -1,0 +1,107 @@
+% 文字コードは UTF-8
+% lualatex で組版する（LuaTeX-ja 使用）
+\documentclass[a4paper]{ltjsarticle}
+\usepackage[ipaex]{luatexja-preset}
+\usepackage{metalogo}
+\usepackage{shortvrb}
+\MakeShortVerb{\|}
+\newcommand{\PkgVersion}{0.2a}
+\newcommand{\Pkg}[1]{\textsf{#1}}
+\newcommand{\Meta}[1]{$\langle$\mbox{}#1\mbox{}$\rangle$}
+\newcommand{\Note}{\par\noindent ※}
+\newcommand{\Means}{~：\quad}
+\providecommand{\eTeX}{$\varepsilon$-\TeX}
+\providecommand{\pTeX}{p\TeX}
+\providecommand{\upTeX}{u\pTeX}
+%-----------------------------------------------------------
+\begin{document}
+\title{\Pkg{bxjafsize} パッケージ（v\PkgVersion）}
+\author{八登崇之\ （Takayuki YATO; aka.~``ZR''）}
+\date{2013/05/05}
+\maketitle
+
+%===========================================================
+\section{概要}
+
+一般に和欧混植の際には欧文を少し拡大した方がバランスがよいと
+されている。
+ところが、日本語対応{\LaTeX}における和欧混植の処理では
+通常は「和文を少し縮小する」という手段が採られる。\inhibitglue
+\footnote{その実現方法として「JFMによるスケール」と
+「NFSSの機能によるスケール」の2つが混用されているが、
+本パッケージの仕様とは直接関係しないので詳細は省く。}\ 
+そのため、|\fontsize{10}{15}| 等としてフォントサイズを10\,ptに
+設定したとしても、実際の和文フォントのサイズ（全角幅）
+は10\,ptより小さくなる。
+例えば、\Pkg{jsarticle}文書クラスでは、10\,ptを指定したときに
+和文の全角幅が13級（≒ 9.2487\,pt）になるように
+和文スケールが設定されている。
+この方式に従うと、「\textbf{和文を}10\,ptにしたい」という場合には
+予め和文スケール値の逆数を乗じた値を計算してそれを指定する必要があるが、
+これは非常に面倒である。
+そこで、本パッケージでは「和文規準で」フォントサイズを指定する
+機能を提供する。
+
+\paragraph{対応フォーマット} \LaTeX。
+\paragraph{対応エンジン} \pTeX 系／\XeTeX ／\LuaTeX 。
+\paragraph{依存パッケージ} 無し。
+
+%===========================================================
+\section{パッケージの読込}
+
+|\usepackage| で読み込む。
+オプションはない。
+\begin{verbatim}
+\usepackage{bxjafsize}
+\end{verbatim}
+
+%===========================================================
+\section{機能}
+
+以下の命令が提供される。
+
+\begin{itemize}
+\item |\jafontsize{|\Meta{サイズ}|}{|\Meta{行送り}|}|\Means
+「和文規準」でフォントサイズを指定する。
+実際の動作としては和文スケール値の逆数を乗じた値が
+（|\fontsize| で）指定される。
+引数の書式は |\fontsize| と同じ；
+寸法値または単位無し十進小数で指定し、後者の場合はpt単位と見做される。
+
+例えば、次のコードは「和文が12\,ptになる」ようにフォントサイズを変更する。
+\begin{quote}\small\begin{verbatim}
+\jafontsize{12}{18}\selectfont
+\end{verbatim}\end{quote}
+
+\item |\jafssetlength\長さ命令{|\Meta{寸法値}|}|\Means
+指定された値に和文スケール値の逆数を乗じた値を長さ命令に代入する。
+フォントサイズを要求する{\LaTeX}命令での使用を想定している。 
+
+例えば、「和文を12\,ptにする」コードは次のようにも書ける。
+（|\lengthA| を長さ命令とする。）
+\begin{quote}\small\begin{verbatim}
+\jafssetlength\lengthA{12pt}\fontsize{\lengthA}{18}\selectfont
+\end{verbatim}\end{quote}
+
+\item |\jafs{|\Meta{寸法値}|}|\Means
+指定された値に和文スケール値の逆数を乗じた寸法値を表す。
+この命令は{\eTeX}専用である。
+
+例えば、「和文を12\,ptにする」コードは次のようにも書ける。
+\begin{quote}\small\begin{verbatim}
+\fontsize{\jafs{12pt}}{18}\selectfont
+\end{verbatim}\end{quote}
+
+\item |\jafsscale|\Means
+和文スケール値（十進小数）に展開される。 
+
+\item |\jafsinvscale|\Means
+和文スケール値の逆数（十進小数）に展開される。 
+
+\end{itemize}
+
+和文スケールの値は文書クラス毎に異なるが、
+このパッケージではそれを自動的に計測しているので、
+どの文書クラスでも正しい結果が得られる。
+
+\end{document}
