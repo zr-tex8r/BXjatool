@@ -3,7 +3,7 @@
 %
 %% package declaration
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bxjafsize}[2013/04/27 v0.2]
+\ProvidesPackage{bxjafsize}[2013/05/05 v0.2a]
 
 %% preparation
 \def\bxzs@pkgname{bxjafsize}
@@ -17,6 +17,7 @@
     \edef\bxzs@tempa{\string#1}\edef\bxzs@tempb{\meaning#1}%
     \ifx\bxzs@tempa\bxzs@tempb#2\fi
   }
+  \bxzs@check\eTeXversion{\global\let\bxzs@etex=t}%
   \bxzs@check\XeTeXversion{\let\bxzs@et=u}%
   \bxzs@check\luatexversion{\let\bxzs@et=u}%
   \bxzs@check\kanjiskip{\let\bxzs@et=j}%
@@ -69,7 +70,7 @@
     \normalfont\fontsize{10}{\z@}\selectfont
     \setbox\z@\hbox{\bxzs@zsp}%
     \ifdim\wd\z@>\z@
-      \@tempdima\wd\z@ \@tempdima.1\@tempdima
+      \@tempdima\wd\z@ \divide\@tempdima10\relax
       \xdef\jafsscale{\strip@pt\@tempdima}%
     \else
       \bxzs@error{Current font setting does not support Japanese}
@@ -106,6 +107,13 @@
   \setlength#1{#2}%
   #1=\jafsinvscale#1\relax
 }
+
+%%<*> \jafs{<dimen>} (fully-expandable)
+\ifx t\bxzs@etex
+\newcommand*\jafs[1]{%
+  \jafsinvscale\dimexpr#1\relax
+}
+\fi
 
 %---------------------------------------
 \endinput
