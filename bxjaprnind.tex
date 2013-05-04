@@ -5,7 +5,7 @@
 \usepackage{metalogo}
 \usepackage{shortvrb}
 \MakeShortVerb{\|}
-\newcommand{\PkgVersion}{0.3}
+\newcommand{\PkgVersion}{0.3a}
 \newcommand{\Pkg}[1]{\textsf{#1}}
 \newcommand{\Meta}[1]{$\langle$\mbox{}#1\mbox{}$\rangle$}
 \newcommand{\Note}{\par\noindent ※}
@@ -16,7 +16,7 @@
 \begin{document}
 \title{\Pkg{bxjaprnind} パッケージ（v\PkgVersion）}
 \author{八登崇之\ （Takayuki YATO; aka.~``ZR''）}
-\date{2013/04/29}
+\date{2013/05/05}
 \maketitle
 
 %===========================================================
@@ -35,18 +35,16 @@
   改行後に予め設定した量の字下げを行えるようにする。
 \end{itemize}
 
-\paragraph{対応環境}
-\begin{itemize}
-\item {\TeX}フォーマット： \LaTeX。
-\item {\TeX}エンジン： 次の何れか。
+\paragraph{対応フォーマット} \LaTeX。
+
+\paragraph{対応エンジン} 次の何れか。
 \begin{itemize}
 \item {\pTeX}またはその拡張。
 \item {\XeTeX}（\Pkg{ZXjatype}パッケージ使用時）
 \item {\LuaTeX}（\Pkg{LuaTeX-ja}パッケージ使用時）
 \end{itemize}
-\end{itemize}
 
-\paragraph{依存パッケージ}
+\paragraph{依存パッケージ} 次の通り。
 \begin{itemize}
 \item \Pkg{bxtoolbox} パッケージ（\Pkg{BXbase}バンドルに含まれる）
 \item 0.3版以降は\Pkg{everyhook}パッケージに依存しなくなった。
@@ -102,6 +100,19 @@
   （強制字下げ（|\\[>]|）の空きとは独立。）
 \item |\lineheadforceindentamount{|\Meta{実数$r$}|}|\Means
   強制字下げ（|\\[>]|）の空きを$r$全角幅とする。
+\item |\usedialogueparenindent|／|\nousedialogueparenindent|\Means
+  会話用の特別な開き括弧調整を有効／無効にする。
+  有効にすると鉤括弧「」『』について以下のように調整方法が変わる。
+  \begin{itemize}
+  \item 空きの量を |\dialogueparenindentamount| で指定された値にする。
+  \item 段落頭の場合は段落下げの空き（|\parindent|）を無効にする。
+  \end{itemize}
+  \Note
+  臨時に鉤括弧の扱いを通常の括弧と同じにしたい場合は、
+  当該の鉤括弧の前に |\prnind| を置けばよい。
+\item |\dialogueparenindentamount{|\Meta{実数$r$}|}|\Means
+  段落頭・強制改行行頭での会話用の開き鉤括弧の前の追加の
+  空きを$r$全角幅とする。
 \end{itemize}
 
 \end{document}
