@@ -1,0 +1,973 @@
+%
+% bxjadirbox.sty
+%
+%% package declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bxjadirbox}[2013/06/01]
+
+%% preparations
+\def\xx@pkgname{bxjadirbox}
+\def\xx@error{\PackageError\xx@pkgname}
+\def\xx@warn{\PackageWarning\xx@pkgname}
+\def\xx@info{\PackageWarning\xx@pkgname}
+\providecommand\bxDebug[1]{}
+
+\endlinechar=-1
+%---------------------------------------
+% Helper stuffs
+
+\def\xx@err@ivbxc#1{
+  \xx@error{Invalid box command \string#1}\@ehc
+}
+\def\xx@err@ukdir#1{
+  \xx@error{Unknown direction '#1'}\@ehc
+}
+\def\xx@err@usdch#1#2{
+  \xx@error{Unsupported direction change (#1->#2)}\@ehc
+}
+\def\xx@err@ivdpb#1#2#3{
+  \xx@error{Unsupported direction change (#1->#2)(pos=#3)}\@ehc
+}
+\def\xx@err@uscmd{
+  \xx@error{Unsupported feature on driver '\xx@driver'}\@ehc
+}
+
+%---------------------------------------
+% Helper stuffs
+
+%% variables
+\newbox\xx@tempbox
+\newdimen\xx@tempdim
+
+%% unique tokens
+\def\xx@end{\xx@end@}
+\def\xx@mark{\xx@mark@}
+
+%% \xx@letcs\CSa{<nameb>}
+\def\xx@letcs#1#2{
+  \expandafter\let\expandafter#1\csname #2\endcsname
+}
+
+%% \xx@ensure@if@token
+\@onlypreamble\xx@ensure@if@token
+\def\xx@ensure@if@token#1{
+  \expandafter\ifx\csname#1\endcsname\relax
+    \expandafter\let\csname#1\expandafter\endcsname
+     \csname iffalse\endcsname
+  \fi
+}
+
+%% dummy if-tokens
+\xx@ensure@if@token{ifCJK@vertical@}
+\xx@ensure@if@token{ifddir}
+
+%% \xx@if@primitive\CS
+\@onlypreamble\xx@if@primitive
+\def\xx@if@primitive#1{
+  \edef\xx@tempa{\string#1}
+  \edef\xx@tempb{\meaning#1}
+  \ifx\xx@tempa\xx@tempb \expandafter\@firstofone
+  \else \expandafter\@gobble
+  \fi
+}
+
+%% \ifxx@in@ptex
+\newif\ifxx@in@ptex \xx@in@ptexfalse
+\xx@if@primitive\kanjiskip{
+  \xx@in@ptextrue
+}
+
+%% \ifxx@in@xetex
+\newif\ifxx@in@xetex \xx@in@xetexfalse
+\xx@if@primitive\XeTeXrevision{
+  \xx@in@xetextrue
+}
+
+%% \ifxx@in@luatex
+\newif\ifxx@in@luatex \xx@in@luatexfalse
+\xx@if@primitive\luatexrevision{
+  \xx@in@luatextrue
+}
+
+%% \xx@do@after@setbox
+% Makes a promise that \xx@do be executed after completing
+% \setbox that follows.
+\def\xx@do@after@setbox{
+  \let\xx@do@inject\@empty
+  \afterassignment\xx@do@after@setbox@a
+}
+\def\xx@do@after@setbox@a{
+  \aftergroup\xx@do
+  \xx@do@inject
+}
+
+%% \xx@do@after@setbox@with@injection{<text>}
+% Same as \xx@do@after@setbox, except that <text> is
+% injected at the head of the box.
+\def\xx@do@after@setbox@with@injection#1{
+  \def\xx@do@inject{#1}%
+  \afterassignment\xx@do@after@setbox@a
+}
+
+%% \xx@with@burst\CS
+\def\xx@with@burst#1{
+  \expandafter#1\romannumeral-`>
+}
+
+%% \xx@triv@dispatch{<box-reg>}
+\def\xx@triv@dispatch#1{
+  {\copy#1}
+}
+
+%% \xx@testopt\Csa{<default>}
+\def\xx@testopt#1#2{
+  \kernel@ifnextchar[
+   {\xx@testopt@a#1{#2}}
+   {\xx@testopt@a#1{#2}[]}
+}
+\def\xx@testopt@a#1#2[#3]{
+  \ifx\xx@mark#3\xx@mark \expandafter\@firstoftwo
+  \else \expandafter\@secondoftwo
+  \fi{#1{#2}}{#1{#3}}
+}
+
+
+%---------------------------------------
+% Driver selection
+
+%% driver setting procedures
+\@onlypreamble\xx@driver@@plain
+\def\xx@driver@@plain{\relax} % no-op
+\@onlypreamble\xx@driver@@ptex
+\let\xx@driver@@ptex\@empty
+\@onlypreamble\xx@driver@@xetex
+\let\xx@driver@@xetex\@empty
+\@onlypreamble\xx@driver@@cjkvert
+\let\xx@driver@@cjkvert\@empty
+
+%% \xx@driver@setup{<driver>,...}{<text>}
+\@onlypreamble\xx@driver@setup
+\def\xx@driver@setup#1#2{
+  \@for\xx@x:=#1\do{
+    \expandafter\g@addto@macro\csname xx@driver@@\xx@x\endcsname
+     {#2}
+  }
+}
+
+%% \xx@driver
+\let\xx@driver\relax
+
+%%<*> \dirboxinitialize
+% Does initialization, with auto-detected driver.
+\@onlypreamble\dirboxinitialize
+\newcommand*\dirboxinitialize{
+  \ifxx@in@ptex
+    \def\xx@tempa{ptex}
+  \else
+    \def\xx@tempa{plain}
+    \@ifpackageloaded{fontspec}{
+      \def\xx@tempa{xetex}
+    }{}
+    \@ifpackageloaded{CJKvert}{
+      \def\xx@tempa{cjkvert}
+    }{}
+  \fi
+  \dirboxinitializewith\xx@tempa
+}
+
+%%<*> \dirboxinitializewith{<driver>}
+\@onlypreamble\dirboxinitializewith
+\newcommand*\dirboxinitializewith[1]{ 
+  \edef\xx@driver{#1}
+  \xx@letcs\xx@tempa{xx@driver@@\xx@driver}
+  \ifx\xx@tempa\relax
+    \xx@error{Unknown driver '\xx@driver' specified}
+     {Driver 'plain' is used instead.}
+    \def\xx@driver{plain}
+    \xx@driver@@plain
+  \else
+    \xx@tempa
+  \fi
+  \xx@info{Initialized with driver '\xx@driver'}
+  % Avoids multiple initialization.
+  \def\dirboxinitializewith#1{
+    \xx@warn{Already initialized}
+  }
+}
+
+%% \xx@ensure@initialize\CSa\CSb
+\@onlypreamble\xx@ensure@initialize
+\def\xx@ensure@initialize#1#2{
+  \let#1#2
+  \ifx\xx@driver\relax
+    \dirboxinitialize
+  \fi
+  #1
+}
+
+%% begin-document hook
+\AtBeginDocument{
+  % Initialize, if not yet done.
+  \ifx\xx@driver\relax
+    \dirboxinitialize
+  \fi
+}
+
+%% Checks the engine if driver is 'ptex'
+\ifxx@in@ptex\else
+\xx@driver@setup{ptex}{
+  \xx@error{The engine does not support driver 'ptex'}
+  \@ehc
+}
+\fi
+
+%% Ascertains that the prerequisite package is loaded.
+\xx@driver@setup{cjkvert}{
+  \@ifpackageloaded{CJKvert}{}{%else
+    \RequirePackage{CJKvert}
+  }
+}
+
+%% Checks if graphicx package is loaded.
+\@onlypreamble\xx@check@graphicx
+\def\xx@check@graphicx{
+  \@ifpackageloaded{graphics}{}{
+    \xx@error{Package 'graphicx' not loaded}\@ehc
+  }
+}
+  %NB: must be after ABD for \dirboxinitialize
+\AtBeginDocument{
+  \xx@check@graphicx
+}
+\xx@driver@setup{ptex}{
+  \let\xx@check@graphicx\relax
+}
+
+%---------------------------------------
+% Level-1 direction-box commands
+% The commands here are driver-independent.
+
+%% \xx@scan@boxcmd
+\@namedef{xx@bc\string\vbox}{\xx@do\vbox}
+\@namedef{xx@bc\string\vtop}{\xx@do\vbox}
+\@namedef{xx@bc\string\vcenter}{\xx@do\vbox}
+\@namedef{xx@bc\string\hbox}{\xx@do\hbox}
+\@namedef{xx@bc\string\setbox}{\xx@handle@setbox}
+\@namedef{xx@bc\string\global}{\xx@handle@global}
+\def\xx@scan@boxcmd{
+  \xx@with@burst\xx@scan@boxcmd@a
+}
+  % #1 is either \BOXCMD, \setbox or \global
+\def\xx@scan@boxcmd@a#1{
+  \@nameuse{xx@bc\meaning#1}\xx@boxcmd@error#1%
+  % if #1 is unexpected thing, then \@nameuse results in
+  % \relax and \xx@boxcmd@error is invoked.
+}
+
+%% \xx@handle@global...
+  % Checks if '\setbox' really follows
+\def\xx@handle@global#1#2\setbox{ 
+  \xx@handle@setbox@a\global\setbox
+}
+
+%% \xx@handle@setbox...
+\def\xx@handle@setbox#1#2{
+  \xx@handle@setbox@a\setbox
+}
+  % Called as \xx@handle@setbox@a[\global]\setbox...=\BOXCMD
+  % #3 is picked up so as to gobble spaces.
+\def\xx@handle@setbox@a#1#2=#3{
+  \def\xx@do@assign{#1#2=}
+  \ifx#1\setbox% is local assignment
+    \def\xx@do@refer{#2}% used in \xx@takeout@box
+  \fi
+  % Back to the beginning
+  \xx@scan@boxcmd#3
+}
+
+%% \xx@boxcmd@error\CS
+\def\xx@boxcmd@error#1{
+  \xx@err@ivbxc#1
+  \vbox
+}
+
+%%<+> \UseDirBoxRotRInYoko{<box-reg>}
+\newcommand*\UseDirBoxRotRInYoko[1]{
+  \vbox{
+    \hbox{\rotatebox{-90}{\copy#1}}
+    \kern\z@
+  }%
+}
+
+%%<+> \UseDirBoxRotLInYoko{<box-reg>}
+\newcommand*\UseDirBoxRotLInYoko[1]{
+  \vbox{
+    \hbox{\rotatebox{90}{\copy#1}}
+    \kern\z@
+  }%
+}
+
+%%<+> \UseDirBoxYokoInRotR{<box-reg>}
+\newcommand*\UseDirBoxYokoInRotR[1]{
+  \vbox{
+    \hbox{\rotatebox{90}{\copy#1}}
+    \kern-.5\wd#1\relax
+    \hrule\@width\z@\@height\z@\@depth.5\wd#1\relax
+  }%
+}
+
+%%<+> \RawDirBoxRotRInYoko[[\global]\setbox<box-reg>=]
+%       \BOXCMD<box-spec>{<text>}
+% (where \BOXCMD is one of \vbox / \vtop / \vcenter / \hbox
+\newcommand\RawDirBoxRotRInYoko{
+  \let\xx@do@usebox\UseDirBoxRotRInYoko
+  \xx@rdirbox@gen
+}
+
+%%<+> \RawDirBoxRotLInYoko[[\global]\setbox<box-reg>=]
+%       \BOXCMD<box-spec>{<text>}
+% (where \BOXCMD is one of \vbox / \vtop / \vcenter / \hbox
+\newcommand\RawDirBoxRotLInYoko{
+  \let\xx@do@usebox\UseDirBoxRotLInYoko
+  \xx@rdirbox@gen
+}
+
+%%<+> \RawDirBoxYokoInRotR[[\global]\setbox<box-reg>=]
+%       \BOXCMD<box-spec>{<text>}
+% (where \BOXCMD is one of \vbox / \vtop / \vcenter / \hbox
+\newcommand\RawDirBoxYokoInRotR{
+  \let\xx@do@usebox\UseDirBoxYokoInRotR
+  \xx@rdirbox@gen
+}
+
+%% \xx@rdirbox@gen...
+\def\xx@rdirbox@gen{
+  \xx@preproc@dispatcher
+  \let\xx@do\xx@rdirbox@gen@b
+  \let\xx@do@refer\relax
+  \let\xx@do@assign\@empty
+  \xx@scan@boxcmd
+}
+  % #2(= \xx@boxcmd@error) is discarded.
+\def\xx@rdirbox@gen@b#1#2#3{
+  \let\xx@do@boxcmd#3% = \BOXCMD
+  \let\xx@do\xx@rdirbox@gen@c
+  \xx@do@after@setbox
+  \setbox\xx@tempbox=#1% 'inner' box command
+}
+  % Invoked after \setbox is done.
+\def\xx@rdirbox@gen@c{
+  \ifx\xx@def@dispatcher\relax
+    \xx@do@assign% '\setbox...=' or empty
+    \xx@do@boxcmd{\xx@do@usebox\xx@tempbox}
+  \else
+    \xx@do@assign\box\xx@tempbox
+    \xx@def@dispatcher\xx@do@usebox
+  \fi
+  \xx@rdirbox@postproc
+  \let\xx@rdirbox@postproc\relax
+}
+
+%% \xx@rdirbox@postproc
+\let\xx@rdirbox@postproc\@empty
+
+%% \xx@preproc@dispatcher
+\def\xx@preproc@dispatcher{
+  \expandafter\xx@preproc@dispatcher@a\xx@dispatcher\relax\@nil
+}
+\def\xx@preproc@dispatcher@a#1#2\@nil{
+  \ifx#1\relax
+    \let\xx@def@dispatcher\relax
+  \else
+    % \xx@dispatch must not be propagated to inner boxes.
+    \let\xx@dispatcher\relax
+    \def\xx@def@dispatcher{\global\let#1}
+  \fi
+}
+
+%% \xx@takeout@box
+\newbox\xx@g@takeout
+\def\xx@takeout@box{
+  \ifx\xx@do@refer\relax\else
+    \global\setbox\xx@g@takeout=\box\xx@do@refer
+    \xdef\xx@takeout@code{
+      \setbox\xx@do@refer=\box\xx@g@takeout
+    }
+    \aftergroup\xx@takeout@code
+  \fi
+}
+
+%---------------------------------------
+% Level-1 pTeX feature wrapper
+\ifxx@in@ptex                   %<*pTeX>
+
+%%<+> \InjectDirCmd\DIRCMD
+\newcommand*\InjectDirCmd[1]{
+  \xx@inject@preproc@dispatcher
+  \def\xx@args{{#1}}
+  \let\xx@do\xx@inject@dircmd@a
+  \let\xx@do@refer\relax
+  \let\xx@do@assign\@empty
+  \xx@scan@boxcmd
+}
+\def\xx@inject@dircmd@a#1#2#3{
+  \ifx\xx@args\xx@args@ROTR
+    \xx@inject@rotr#3
+  \fi
+  \let\xx@do@boxcmd#3% = \BOXCMD
+  \let\xx@do\xx@inject@dircmd@b
+  \ifx#3\vcenter
+    \def\xx@rhs@assign{\vcenter{\box\xx@tempbox}}
+    \def\xx@tempa{\vbox}
+  \else
+    \def\xx@rhs@assign{\box\xx@tempbox}
+    \def\xx@tempa{#3}
+  \fi
+  \expandafter\xx@do@after@setbox@with@injection\xx@args
+  \setbox\xx@tempbox=\xx@tempa
+}
+  % Invoked after \setbox is done.
+\def\xx@inject@dircmd@b{
+  \xx@do@assign\xx@rhs@assign
+  \xx@rdirbox@postproc
+  \let\xx@rdirbox@postproc\relax
+}
+
+%%<+> \ROTR
+\newcommand*{\ROTR}{\noexpand\xx@ROTR}
+
+%% \xx@args@ROTR
+\def\xx@args@ROTR{{\ROTR}}
+
+%% \xx@inject@rotr\BOXCMD
+\def\xx@inject@rotr#1{
+  \ifx#1\hbox
+    \def\xx@args{{\tate
+     $#1\bgroup\aftergroup\xx@inject@rotr@a}}
+  \else
+    \def\xx@args{{\tate
+     \hbox\bgroup$#1\bgroup\aftergroup\xx@inject@rotr@b}}
+  \fi
+}
+\def\xx@inject@rotr@a{
+  \m@th$\egroup
+}
+\def\xx@inject@rotr@b{
+  \m@th$\egroup\egroup
+}
+
+%% \xx@inject@preproc@dispatcher
+\def\xx@inject@preproc@dispatcher{
+  \expandafter\xx@inject@preproc@dispatcher@a
+   \xx@dispatcher\relax\@nil
+}
+\def\xx@inject@preproc@dispatcher@a#1#2\@nil{
+  \ifx#1\relax\else
+    \let\xx@dispatcher\relax
+    \global\let#1\xx@triv@dispatch
+  \fi
+}
+
+\fi                             %</pTeX>
+%---------------------------------------
+% Font switching
+
+%%<+> \SwitchFontToYoko
+\newcommand*\SwitchFontToYoko{
+}
+
+%%<+> \SwitchFontToTate
+\newcommand*\SwitchFontToTate{
+}
+
+%%<*> \setlogicalpagedir{<dir>}
+\@onlypreamble\setlogicalpagedir
+\newcommand*\setlogicalpagedir{
+  \xx@ensure@initialize\setlogicalpagedir
+   \xx@setlogicalpagedir@default
+}
+\@onlypreamble\xx@setlogicalpagedir@default
+\def\xx@setlogicalpagedir@default#1{
+  \xx@err@uscmd
+}
+
+\xx@driver@setup{xetex}{%       %<*xetex>
+%% Patch to \defaultfontfeatures
+
+}                               %</xetex>
+\xx@driver@setup{cjkvert}{%     %<*cjkvert>
+\renewcommand*\SwitchFontToYoko{
+  \ifCJK@vertical@
+    \CJKhorz
+    \aftergroup\CJKvert
+  \fi
+}
+\renewcommand*\SwitchFontToTate{
+  \ifCJK@vertical@\else
+    \CJKvert
+    \aftergroup\CJKhorz
+  \fi
+}
+
+\renewcommand*\setlogicalpagedir[1]{
+  \xx@letcs\xx@init@cjkdir{xx@cjkdir@@#1}
+  \ifx\xx@init@cjkdir\relax
+    \xx@err@ukdir#1
+  \else
+    \SetCurrentBoxDir{#1}
+  \fi
+}
+\def\xx@cjkdir@@y{\CJKhorz}
+\def\xx@cjkdir@@t{\CJKvert}
+\let\xx@init@cjkdir\CJKhorz
+\AtBeginDocument{
+  \xx@init@cjkdir
+}
+}                               %</cjkvert>
+
+%---------------------------------------
+% Handling direction information
+
+%% \xx@curr@dir
+\def\xx@dir@dyna{*}
+\def\xx@dir@inv{?}
+\let\xx@dir@@y\xx@dir@dyna
+\def\xx@dir@@z{z}
+\def\xx@dir@@d{d}
+\let\xx@curr@dir\xx@dir@dyna
+
+%%<+> \SetCurrentBoxDir{<dir>}
+\newcommand*\SetCurrentBoxDir[1]{
+  \xx@letcs\xx@curr@dir{xx@dir@@#1}
+  \ifx\xx@curr@dir\relax
+    \xx@err@ukdir#1
+    \let\xx@curr@dir\xx@dir@inv
+  \fi
+}
+
+%%<+> \CurrentBoxDir
+\newcommand*\CurrentBoxDir{
+  \if\xx@curr@dir\xx@dir@dyna y
+  \else \xx@curr@dir
+  \fi
+}
+
+\xx@driver@setup{xetex,cjkvert}{%<*xetex|cjkvert>
+%% more directions supported
+\def\xx@dir@@t{t}
+}                               %</xetex|cjkvert>
+
+\ifxx@in@ptex
+\begingroup
+  \catcode`|=0 %
+\xx@driver@setup{ptex}{%        %<*ptex>
+%% more directions supported
+% Declares y, t, d to be dynamic.
+\let\xx@dir@@y\xx@dir@dyna
+\let\xx@dir@@t\xx@dir@dyna
+\let\xx@dir@@d\xx@dir@dyna
+
+%%<+> \CurrentBoxDir
+\renewcommand*\CurrentBoxDir{
+  \if\xx@curr@dir\xx@dir@dyna
+    % 'dynamic' directions
+    |ifydir y
+    |else|iftdir t
+    |else|ifddir d
+    |else \xx@dir@inv
+    |fi|fi|fi
+  \else \xx@curr@dir
+  \fi
+}
+
+}                               %</ptex>
+\endgroup
+\fi
+
+%---------------------------------------
+% Level-2 direction-box commands
+
+%%<*> \DirBox{<dir>}...
+\newcommand*\DirBox[1]{
+  \let\xx@dispatcher\relax
+  \xx@letcs\xx@dirbox@dirhndl{xx@dirh@@\CurrentBoxDir @#1}
+  \ifx\xx@dirbox@dirhndl\relax
+    \xx@err@usdch\CurrentBoxDir#1
+  \fi
+  \xx@dirbox@dirhndl
+}
+
+%% \xx@dispatcher
+\let\xx@dispatcher\relax
+
+%%<+> \PrepareDirBox{<dir>}\CS{<box-reg>}=\BOXCMD{<text>}
+\newcommand*\PrepareDirBox[2]{
+  \def\xx@dispatcher{#2}
+  \xx@letcs\xx@dirbox@dirhndl{xx@dirh@@\CurrentBoxDir @#1}
+  \ifx\xx@dirbox@dirhndl\relax
+    \xx@err@usdch\CurrentBoxDir#1
+    \let#2\xx@triv@dispatch
+  \fi
+  \xx@dirbox@dirhndl\setbox
+}
+%% Trivial DIrBox direction handlers.
+\let\xx@dirh@@y@y\@empty
+\let\xx@dirh@@t@t\@empty
+\let\xx@dirh@@z@z\@empty
+\let\xx@dirh@@d@d\@empty
+
+%% \xx@local@dirbox
+\def\xx@local@dirbox{
+  \begingroup
+    \let\xx@rdirbox@postproc\xx@local@dirbox@a
+}
+\def\xx@local@dirbox@a{
+    \xx@takeout@box
+  \endgroup
+}
+
+%% DirBox direction handlers
+\def\xx@dirh@@y@z{
+  \xx@local@dirbox
+  \SetCurrentBoxDir{z}
+  \RawDirBoxRotRInYoko
+}
+\def\xx@dirh@@y@d{
+  \xx@local@dirbox
+  \SetCurrentBoxDir{d}
+  \RawDirBoxRotLInYoko
+}
+\def\xx@dirh@@z@y{
+  \xx@local@dirbox
+  \SetCurrentBoxDir{y}
+  \RawDirBoxYokoInRotR
+}
+
+\xx@driver@setup{cjkvert}{%     %<*cjkvert>
+
+%% Additional direction handlers
+\def\xx@dirh@@y@t{
+  \xx@local@dirbox
+  \SetCurrentBoxDir{t}
+  \SwitchFontToTate
+  \RawDirBoxRotRInYoko
+}
+\def\xx@dirh@@t@y{
+  \xx@local@dirbox
+  \SetCurrentBoxDir{y}
+  \SwitchFontToYoko
+  \RawDirBoxYokoInRotR
+}
+
+}                               %</cjkvert>
+
+\xx@driver@setup{ptex}{%        %<*ptex>
+
+%% Replaces direction handlers
+% Handlers for pTeX are only dependent on <to-dir>,
+% so first defines the necessary macros...
+\def\xx@pdirh@@y{
+  \xx@local@dirbox
+  \SetCurrentBoxDir{y}
+  \InjectDirCmd\yoko
+}
+\def\xx@pdirh@@z{
+  \xx@local@dirbox
+  \SetCurrentBoxDir{z}
+  \InjectDirCmd\ROTR
+}
+\def\xx@pdirh@@t{
+  \xx@local@dirbox
+  \SetCurrentBoxDir{t}
+  \InjectDirCmd\tate
+}
+\def\xx@pdirh@@d{
+  \xx@local@dirbox
+  \SetCurrentBoxDir{d}
+  \InjectDirCmd\dtou
+}
+% ... and defines the actual handlers.
+\let\xx@dirh@@y@z\xx@pdirh@@z
+\let\xx@dirh@@y@t\xx@pdirh@@t
+\let\xx@dirh@@y@d\xx@pdirh@@d
+\let\xx@dirh@@z@y\xx@pdirh@@y
+\let\xx@dirh@@t@y\xx@pdirh@@y
+
+}                               %</ptex>
+
+%---------------------------------------
+% User-level paragraph box commands
+
+%% \xx@dirparbox@opt\CS
+% Reads optional arguments  (dir, pos, height, valign)and
+% goes to \CS.
+\def\xx@dirparbox@opt#1{
+  \let\xx@next=#1
+  \@ifnextchar<
+   {\xx@dirparbox@opt@a}
+   {\xx@dirparbox@opt@b}
+}
+\def\xx@dirparbox@opt@a<#1>{
+  \xx@dirparbox@opt@b{#1}
+}
+\def\xx@dirparbox@opt@b#1{
+  \edef\xx@opt@dir{#1}
+  \xx@testopt\xx@dirparbox@opt@c{c}
+}
+\def\xx@dirparbox@opt@c#1{
+  \edef\xx@opt@pos{#1}
+  \xx@testopt\xx@dirparbox@opt@d{}
+}
+\def\xx@dirparbox@opt@d#1{
+  \edef\xx@opt@height{#1}
+  \xx@testopt\xx@dirparbox@opt@e{\xx@opt@pos}
+}
+\def\xx@dirparbox@opt@e#1{
+  \edef\xx@opt@valign{#1}
+  \xx@next
+}
+
+%% \xx@make@box@vars
+\def\xx@make@box@vars{
+  \def\width{\wd\@tempboxa}
+  \def\height{\ht\@tempboxa}
+  \def\depth{\dp\@tempboxa}
+  \let\totalheight\@ovri
+  \totalheight\height
+  \advance\totalheight\depth
+}
+
+%% \xx@dirparbox@setparam
+\def\xx@dirparbox@setparam{
+  \edef\xx@curr@dir{\CurrentBoxDir}
+  \ifx\xx@opt@dir\@empty
+    \let\xx@opt@dir\xx@curr@dir
+  \fi
+  \ifx\xx@opt@dir\xx@curr@dir
+    \@nameuse{xx@dpbi@@\xx@opt@pos}
+  \else
+    \xx@letcs\xx@tempa
+     {xx@dpb@@\xx@curr@dir @\xx@opt@dir @\xx@opt@pos}
+    \ifx\xx@tempa\relax
+      \xx@err@ivdpb\xx@curr@dir\xx@opt@dir\xx@opt@pos
+      \xx@dpbi@@c
+    \else \xx@tempa
+    \fi
+  \fi
+}
+
+%% \xx@output@tempboxa
+\def\xx@output@tempboxa{
+  \let\hss\vss\let\unhbox\unvbox
+  \@nameuse{bm@\xx@opt@valign}
+}
+
+%% \xx@math@on / \xx@math@off
+\def\xx@math@on{$}
+\def\xx@math@off{\m@th$}
+
+%% \xx@adjust@baseline
+\let\xx@adjust@baseline\relax
+
+\xx@driver@setup{ptex}{
+\let\xx@adjust@baseline\adjustbaseline
+}
+
+%% \xx@zw
+\let\xx@zw\@ovro
+%% \xx@cjk@offset
+\let\xx@cjk@offset\@ovdx
+
+%% \xx@assign@zw
+\def\xx@assign@zw{
+  \xx@zw\f@size\p@\relax
+}
+\xx@driver@setup{ptex}{
+\def\xx@assign@zw{
+  \xx@zw1zw\relax
+}
+}
+\xx@driver@setup{cjkvert}{
+\def\xx@assign@zw{
+  \xx@zw\f@size\p@\relax
+  \xx@get@cjk@offset
+}
+}
+
+\xx@driver@setup{cjkvert}{
+%% \xx@get@cjk@offset
+\def\xx@get@cjk@offset{
+  \xx@cjk@offset\z@
+  \edef\xx@next{\noexpand\xx@get@cjk@offset@a
+    \csname \CJK@enc/\CJK@family/offset/v\endcsname}
+  \xx@next\xx@mark em\xx@mark\xx@end
+}
+\def\xx@get@cjk@offset@a#1em\xx@mark#2\xx@end{
+  \ifx\xx@mark#2\xx@mark\else
+     \xx@cjk@offset=#1\xx@zw
+  \fi
+}
+}
+
+%%<*> \dirparbox
+\newcommand*\dirparbox{
+  \xx@dirparbox@opt\xx@dirparbox@a
+}
+\def\xx@dirparbox@a#1#2{%<width><text>
+  \leavevmode
+  \begingroup
+    \xx@dirparbox@setparam
+    \setlength\xx@tempdim{#1}
+    \PrepareDirBox\xx@opt@dir\xx@g@dispatch\@tempboxa=\vbox{
+      \hsize=\xx@tempdim
+      \@parboxrestore
+      \xx@adjust@baseline
+      #2\@@par
+    }
+    %
+    \ifx\xx@opt@height\@empty\else
+      \setlength\xx@tempdim{\xx@opt@height}
+      \def\@parboxto{to\xx@tempdim}
+    \fi
+    \ifmmode
+      \let\xx@math@on\@empty
+      \let\xx@math@off\@empty
+    \fi
+    \xx@begin@parbox\@parboxto
+    {\xx@output@tempboxa}
+    \xx@end@parbox
+  \endgroup
+}
+
+%% dirparbox handlers
+\def\xx@dpbi@@t{
+  \let\xx@begin@parbox\vtop
+  \let\xx@end@parbox\@empty
+}
+\def\xx@dpbi@@c{
+  \def\xx@begin@parbox{\xx@math@on\vcenter}
+  \def\xx@end@parbox{\xx@math@off}
+}
+\def\xx@dpbi@@b{
+  \let\xx@begin@parbox\vbox
+  \let\xx@end@parbox\@empty
+}
+\def\xx@dpb@@y@z@t{
+  \def\xx@begin@parbox{\vtop\bgroup\kern\z@\DirBox\xx@opt@dir\vbox}
+  \def\xx@end@parbox{\egroup}
+}
+\def\xx@dpb@@y@z@c{
+  \def\xx@begin@parbox{\xx@math@on\DirBox\xx@opt@dir\vcenter}
+  \def\xx@end@parbox{\xx@math@off}
+}
+\def\xx@dpb@@y@z@b{
+  \def\xx@begin@parbox{\vbox\bgroup\DirBox\xx@opt@dir\vbox}
+  \def\xx@end@parbox{\kern\z@\egroup}
+}
+\let\xx@dpb@@y@t@t\xx@dpb@@y@z@t
+\let\xx@dpb@@y@t@c\xx@dpb@@y@z@c
+\let\xx@dpb@@y@t@b\xx@dpb@@y@z@b
+\let\xx@dpb@@y@d@t\xx@dpb@@y@z@t
+\let\xx@dpb@@y@d@c\xx@dpb@@y@z@c
+\let\xx@dpb@@y@d@b\xx@dpb@@y@z@b
+\def\xx@dpb@@z@y@t{
+  \xx@assign@zw
+  \xx@set@shift@z@y@t
+  \def\xx@begin@parbox{\raise\xx@shift@parbox\vtop\bgroup
+   \kern\z@\DirBox\xx@opt@dir\vbox}
+  \def\xx@end@parbox{\egroup}
+}
+\def\xx@set@shift@z@y@t{
+  \def\xx@shift@parbox{.5\xx@zw}
+}
+\def\xx@dpb@@z@y@c{
+  \def\xx@begin@parbox{\xx@math@on\DirBox\xx@opt@dir\vcenter}
+  \def\xx@end@parbox{\xx@math@off}
+}
+\def\xx@dpb@@z@y@b{
+  \xx@assign@zw
+  \xx@set@shift@z@y@b
+  \def\xx@begin@parbox{\raise\xx@shift@parbox\vbox\bgroup
+   \DirBox\xx@opt@dir\vbox}
+  \def\xx@end@parbox{\kern\z@\egroup}
+}
+\def\xx@set@shift@z@y@b{
+  \def\xx@shift@parbox{-.5\xx@zw}
+}
+\let\xx@dpb@@t@y@t\xx@dpb@@z@y@t
+\let\xx@dpb@@t@y@c\xx@dpb@@z@y@c
+\let\xx@dpb@@t@y@b\xx@dpb@@z@y@b
+
+\xx@driver@setup{cjkvert}{
+\def\xx@set@shift@z@y@t{
+  \@tempdima1.38\xx@zw \advance\@tempdima-\xx@cjk@offset
+  \edef\xx@shift@parbox{\the\@tempdima}
+}
+\def\xx@set@shift@z@y@b{
+  \@tempdima0.38\xx@zw \advance\@tempdima-\xx@cjk@offset
+  \edef\xx@shift@parbox{\the\@tempdima}
+}
+}
+
+%---------------------------------------
+% User-level linear box commands
+
+%% \xx@dirmakebox@opt\CS
+% Reads optional arguments  (dir, pos, height, valign)and
+% goes to \CS.
+\def\xx@dirmakebox@opt#1{
+  \let\xx@next=#1
+  \@ifnextchar<
+   {\xx@dirmakebox@opt@a}
+   {\xx@dirmakebox@opt@b}
+}
+\def\xx@dirmakebox@opt@a<#1>{
+  \xx@dirmakebox@opt@b{#1}
+}
+\def\xx@dirmakebox@opt@b#1{
+  \edef\xx@opt@dir{#1}
+  \xx@testopt\xx@dirmakebox@opt@c{}
+}
+\def\xx@dirmakebox@opt@c#1{
+  \edef\xx@opt@width{#1}
+  \xx@testopt\xx@dirmakebox@opt@d{c}
+}
+\def\xx@dirmakebox@opt@d#1{
+  \edef\xx@opt@halign{#1}
+  \xx@next
+}
+
+%% \xx@dirmakebox@setparam
+\def\xx@dirmakebox@setparam{
+  \edef\xx@curr@dir{\CurrentBoxDir}
+  \ifx\xx@opt@dir\@empty
+    \let\xx@opt@dir\xx@curr@dir
+  \fi
+
+%%<*> \dirmakebox
+\newcommand*\dirmakebox{
+  \xx@dirmakebox@opt\xx@dirmakebox@a
+}
+\def\xx@dirmakebox@a#1{%<text>
+  \leavevmode
+  \begingroup
+    \xx@dirmakebox@setparam
+    \setlength\xx@tempdim{#1}
+    \PrepareDirBox\xx@opt@dir\xx@g@dispatch\@tempboxa=
+     \hbox{#1}
+    %
+    \ifx\xx@opt@width\@empty
+      \xx@g@dispatch\@tempboxa
+    \else
+      \setlength\xx@tempdim{\xx@opt@width}
+      \DirBox\xx@opt@dir\hbox to\xx@tempdim
+       {\@nameuse{bm@\xx@opt@halign}}
+    \fi
+  \endgroup
+}
+
+%---------------------------------------
+% All done
+\endlinechar=13
+\endinput
+%% EOF

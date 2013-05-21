@@ -1,0 +1,29 @@
+\documentclass{article}
+\usepackage{yaclabo,yacshowd}
+\usepackage[]{graphicx}
+\usepackage{bxjadirbox}
+\usepackage{CJKutf8,CJKspace,CJKpunct,CJKvert}
+\dirboxinitialize
+\setlogicalpagedir{y}
+\begin{document}
+\begin{CJK}{UTF8}{ipxm}
+\newlength{\zw}\settowidth{\zw}{一}
+
+
+吾輩%
+\DirBoxTate\vbox{\sloppy\hsize=7\zw\parindent=1\zw
+吾輩は猫である、ニャー。}
+is 何。
+
+吾輩%
+\DirBoxRotR\vbox{\sloppy\hsize=7\zw\parindent=1\zw
+吾輩は猫である、ニャー。}
+is 何。
+
+吾輩%
+\DirBoxRotL\vbox{\sloppy\hsize=7\zw\parindent=1\zw
+吾輩は猫である、ニャー。}
+is 何。
+
+\end{CJK}
+\end{document}
