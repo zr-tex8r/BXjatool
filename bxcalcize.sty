@@ -9,7 +9,7 @@
 
 %% package declaration
 \NeedsTeXFormat{LaTeX2e}
-\ProvidesPackage{bxcalcize}[2012/05/20 v0.2]
+\ProvidesPackage{bxcalcize}[2017/04/01 v0.2b]
 
 %% preparations
 \def\bxcy@pkgname{bxcalcize}
@@ -19,7 +19,7 @@
 \RequirePackage{calc}
 
 %% code guards
-\def\bxcy@restore@codes{%
+\edef\bxcy@restore@codes{%
 \endlinechar=\the\endlinechar%
 \relax}
 \AtEndOfPackage{\bxcy@restore@codes}
