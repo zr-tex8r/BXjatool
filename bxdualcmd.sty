@@ -1,0 +1,475 @@
+%
+% bxdualcmd.sty
+%
+%% package declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bxdualcmd}[2013/11/05 v0.3b]
+
+% TEXT MATH  Control symbols
+%  *    *     \ \#\$\%\&\,\-\/\\\{\}
+%  *          \"\'\.\=\@\^\`\~
+%       *     \!\*\:\;\>\|
+%  <---->     \(\)\[\]
+%             \+\<\?
+
+%% definitions
+\def\bxdl@pkgname{bxdualcmd}
+\def\bxdl@error{\PackageError\bxdl@pkgname}
+\def\bxdl@warn{\PackageWarningNoLine\bxdl@pkgname}
+\providecommand*\bxDebug[1]{}
+\newdimen\bxdl@dima
+\newif\ifbxdl@ok
+\newif\ifbxdl@dual@textsym
+
+%% code guards
+\edef\bxdl@restore@codes{%
+\catcode33=\the\catcode33%<!>
+\catcode34=\the\catcode34%<">
+\catcode62=\the\catcode62%<>>
+\endlinechar=\the\endlinechar%
+\relax}%
+\catcode33=12 %
+\catcode34=12 %
+\catcode62=12 %
+\AtEndOfPackage{%
+\bxdl@restore@codes
+\let\bxdl@restore@codes\@undefined}
+\endlinechar=-1 %
+
+%------------------------------------------------- errors
+
+\def\bxdl@warn@alext#1{
+  \bxdl@warn{Command '\string#1' is defined and is not dual\MessageBreak
+    (or it is an undefinable token in LaTeX)}
+}
+
+\def\bxdl@err@undef#1#2{
+  \bxdl@error{Command '\string#1' undefined in #2 mode}
+   {The command '\string#1' is defined as a dual command but its definition in
+   \MessageBreak
+    #2 mode is not yet given.\MessageBreak \@ehc}
+}
+
+\def\bxdl@err@aldef#1#2{
+  \bxdl@error{Command '\string#1' as #2 is already defined}\@ehc
+}
+
+\def\bxdl@err@nodef#1#2{
+  \bxdl@error{Command '\string#1' as #2 is undefined\MeesageBreak
+    (or the meaning is system-defined)}
+  \@ehc
+}
+
+\def\bxdl@err@fldlf#1{
+  \bxdl@error{Failed in dualifying '\string#1'}
+  \@ehc
+}
+
+\def\bxdl@warn@flpch{
+  \bxdl@warn{Failed in patching to kernel}
+}
+
+%------------------------------------------------- helpers
+
+%% unique tokens
+\def\bxdl@end{\bxdl@end@}
+
+%% \bxdl@noop
+\def\bxdl@noop{\@empty}
+
+%% \bxdl@cslet, etc.
+\def\bxdl@cslet#1#2{
+  \expandafter\let\csname #1\endcsname=#2
+}
+\def\bxdl@letcs#1#2{
+  \expandafter\let\expandafter#1\csname#2\endcsname
+}
+\def\bxdl@csletcs#1#2{
+  \expandafter\let\csname\expandafter#1\endcsname\csname#2\endcsname
+}
+
+%% \bxdl@string\CS
+\def\bxdl@string{
+  \expandafter\@gobble\string
+}
+
+%% \bxdl@for@each@cmd@in\CSlist{<proc>}
+\def\bxdl@for@each@cmd@in#1{
+  \expandafter\bxdl@for@each@cmd\expandafter{#1}
+}
+
+%% \bxdl@for@each@cmd{\CSa\CSb...}{<proc>}
+\def\bxdl@for@each@cmd#1{
+  \def\bxdl@tempa{\@tfor\bxdl@fec@tok:=#1}
+  \afterassignment\bxdl@for@each@cmd@a
+  \def\bxdl@fec@proc##1
+}
+\def\bxdl@for@each@cmd@a{
+  \bxdl@tempa\do{
+    \expandafter\bxdl@fec@proc\expandafter{\bxdl@fec@tok}
+  }
+}
+
+%% \bxdl@ifdefinable\CS{<yes>}{<no>}
+\def\bxdl@ifdefinable#1#2#3{
+  \def\@notdefinable{#3}
+  \@ifdefinable{#1}{#2}
+  \let\@notdefinable\bxdl@org@notdefinable
+}
+\let\bxdl@org@notdefinable\@notdefinable
+
+%------------------------------------------------- initiation
+
+%%<*> \dualifycommand\CSx
+\newcommand*\dualifycommand{
+  \bxdl@initiate
+}
+
+%% the list of all 'math-defined' commands in LaTeX
+\def\bxdl@math@cmd@list{
+  \!\*\:\;\>\|
+}
+%% the list of all 'text-symbol' commands in LaTeX
+\def\bxdl@textsym@cmd@list{
+  \"\'\.\=\^\`\~
+}
+%% the list of all 'text-defined' commands in LaTeX
+\def\bxdl@text@cmd@list{
+  \@
+}
+
+%% \bxdl@mode@name<T/M>
+\def\bxdl@mode@name#1{
+  \csname bxdl@mode@#1\endcsname
+}
+\def\bxdl@mode@T{text}
+\def\bxdl@mode@M{math}
+
+%% \bxdl@initiate\CS
+% Call the initializer for \CS to dualify it.
+\def\bxdl@initiate#1{
+  \bxdl@letcs\bxdl@tempa{bxdl@O/\string#1}
+  \ifx\bxdl@tempa\relax
+    \bxdl@letcs\bxdl@tempa{bxdl@init/\string#1}
+    \ifx\bxdl@tempa\relax
+      \let\bxdl@tempa\bxdl@init@gen
+    \fi
+    \bxdl@tempa#1
+    \bxdl@letcs\bxdl@tempa{bxdl@O/\string#1}
+    \ifx\bxdl@tempa\relax
+      \bxdl@err@fldlf#1
+    \else \bxDebug{Dualified \string#1}
+    \fi
+  \fi
+}
+\def\bxdl@init@sub#1#2{
+  \expandafter#1
+   \csname bxdl@O/\string#2\expandafter\endcsname
+   \csname bxdl@T/\string#2\expandafter\endcsname
+   \csname bxdl@M/\string#2\expandafter\endcsname
+   \csname\bxdl@string#2\space\endcsname #2
+}
+
+%% \bxdl@init@gen\CS
+% The initializer for use with full-user-defined commands.
+\def\bxdl@init@gen#1{
+  \bxdl@ifdefinable#1{
+    \bxdl@init@sub\bxdl@init@gen@a#1
+  }{
+    \bxdl@warn@alext#1
+  }
+}
+\def\bxdl@init@gen@a#1#2#3#4#5{
+  % \[bxdl@O/\CS] \[bxdl@T/\CS] \[bxdl@M/\CS] \[CS ] \CS
+  \ifx#5\@undefined \let#5\bxdl@noop \fi
+  \ifx#5\relax \let#5\bxdl@noop \fi
+  \let#1#5\let#5\relax
+  \DeclareRobustCommand*#5{}
+  \def#4{\bxdl@dual#5#2#3}
+}
+
+%% \bxdl@frozen@cmd
+% Used as the meaning of \[bxdl@(T|M)/...] and signifies that
+% the meaning is given by system and cannot be altered.
+% (The original meaning is stored in \[bxdl@O/...].)
+\def\bxdl@frozen@cmd{\noexpand\bxdl@frozen@cmd@}
+
+%% \bxdl@init@gen@math
+% The initializer for use with "math-defined" commands.
+\def\bxdl@init@gen@math#1{
+  \begingroup\expandafter\expandafter\expandafter\endgroup
+  \expandafter\ifx\csname ?\string#1\endcsname\relax
+    \bxdl@init@sub\bxdl@init@gen@math@a#1
+  \fi
+}
+\def\bxdl@init@gen@math@a#1#2#3#4#5{
+  \bxdl@init@gen@a#1#2#3#4#5
+  \def#4{\bxdl@dual#5#2#1}
+  \let#3\bxdl@frozen@cmd
+}
+
+%% \bxdl@init@gen@text
+% For use with "text-defined" commands.
+\def\bxdl@init@gen@text#1{
+  \begingroup\expandafter\expandafter\expandafter\endgroup
+  \expandafter\ifx\csname ?\string#1\endcsname\relax
+    \bxdl@init@sub\bxdl@init@gen@text@a#1
+  \fi
+}
+\def\bxdl@init@gen@text@a#1#2#3#4#5{
+  \bxdl@init@gen@a#1#2#3#4#5
+  \def#4{\bxdl@dual#5#1#3}
+  \let#2\bxdl@frozen@cmd
+}
+
+%% \bxdl@init@gen@textsym
+% For use with "text-symbol" commands.
+\def\bxdl@init@gen@textsym#1{
+  \EnableDualForAccentCommands
+  \ifbxdl@dual@textsym
+    \expandafter\bxdl@init@gen@textsym@a
+     \csname bxdl@O/\string#1\expandafter\endcsname
+     \csname bxdl@T/\string#1\expandafter\endcsname
+     \csname bxdl@M/\string#1\endcsname
+  \fi
+}
+\def\bxdl@init@gen@textsym@a#1#2#3{
+  \let#1\bxdl@noop
+  \let#2\bxdl@frozen@cmd
+}
+
+%% Declares to use special initiators.
+\bxdl@for@each@cmd@in\bxdl@math@cmd@list{
+  \bxdl@cslet{bxdl@init/\string#1}\bxdl@init@gen@math
+}
+\bxdl@for@each@cmd@in\bxdl@text@cmd@list{
+  \bxdl@cslet{bxdl@init/\string#1}\bxdl@init@gen@text
+}
+\bxdl@for@each@cmd@in\bxdl@textsym@cmd@list{
+  \bxdl@cslet{bxdl@init/\string#1}\bxdl@init@gen@textsym
+}
+
+%------------------------------------------------- invocation
+
+%% \bxdl@dual\CS\CStext\CSmath
+\def\bxdl@dual#1#2#3{
+  \ifmmode \expandafter\@firstoftwo
+  \else \expandafter\@secondoftwo
+  \fi{
+    \bxdl@dual@as M#1#3
+  }{
+    \bxdl@dual@as T#1#2
+  }
+}
+\def\bxdl@dual@as#1#2#3{
+  \ifx#3\relax
+    \bxdl@err@undef#2{\bxdl@mode@name#1}
+    \expandafter\@gobble
+  \fi
+  #3
+}
+
+%------------------------------------------------- definition
+
+%%<*> \newcommandastext
+\newcommand*\newcommandastext
+{\bxdl@set@meaning\bxdl@new{T}}
+%%<*> \renewcommandastext
+\newcommand*\renewcommandastext
+{\bxdl@set@meaning\bxdl@renew{T}}
+%%<*> \providecommandastext
+\newcommand*\providecommandastext
+{\bxdl@set@meaning\bxdl@provide{T}}
+%%<*> \newcommandasmath
+\newcommand*\newcommandasmath
+{\bxdl@set@meaning\bxdl@new{M}}
+%%<*> \renewcommandasmath
+\newcommand*\renewcommandasmath
+{\bxdl@set@meaning\bxdl@renew{M}}
+%%<*> \providecommandasmath
+\newcommand*\providecommandasmath
+{\bxdl@set@meaning\bxdl@provide{M}}
+
+%% \bxdl@set@meaning
+\def\bxdl@set@meaning#1#2{%\bxdl@new M
+  \@ifstar{\bxdl@set@mean@a#1#2*}
+   {\bxdl@set@mean@a#1#2{}}
+}
+\def\bxdl@set@mean@a#1#2#3#4{%\bxdl@new M * \CSx
+  \def\bxdl@sm@next{
+    \expandafter#1\csname bxdl@#2/\string#4\endcsname #2{#3}#4
+  }
+  \expandafter\ifx\csname bxdl@O/\string#4\endcsname\relax
+    \bxdl@initiate#4
+    \expandafter\ifx\csname bxdl@O/\string#4\endcsname\relax
+      \def\bxdl@sm@next{\bxdl@discard@def}
+    \fi
+  \fi
+  \bxdl@sm@next
+}
+
+%% \bxdl@check@free
+\def\bxdl@check@free#1#2#3#4{
+  \ifx#1\@undefined           \let\bxdl@cf@next#3
+  \else\ifx#1\relax           \let\bxdl@cf@next#3
+  \else\ifx#1\bxdl@frozen@cmd \let\bxdl@cf@next#4
+  \else                       \let\bxdl@cf@next#2
+  \fi\fi\fi
+  \bxdl@cf@next
+}
+
+%% \bxdl@new
+\def\bxdl@new#1{%\[bxdl@M/\CSx] | M * \CSx
+  \bxdl@check@free#1\@secondoftwo\@firstoftwo\@secondoftwo
+   {\bxdl@do@def\newcommand#1}
+   {\bxdl@new@fail}
+}
+\def\bxdl@new@fail#1#2#3{% M * \CSx
+  \bxdl@err@aldef#3{\bxdl@mode@name#1}
+  \bxdl@discard@def
+}
+
+%% \bxdl@renew
+\def\bxdl@renew#1{%\[bxdl@M/\CSx] | M * \CSx
+  \bxdl@check@free#1\@firstoftwo\@secondoftwo\@secondoftwo
+   {\bxdl@do@def\renewcommand#1}
+   {\bxdl@renew@fail}
+}
+\def\bxdl@renew@fail#1#2#3{% M * \CSx
+  \bxdl@err@nodef#3{\bxdl@mode@name#1}
+  \bxdl@discard@def
+}
+
+\def\bxdl@do@def#1#2#3#4#5{% \newcom \[bxdl@M/\CSx] M * \CSx
+  #1#4#2
+}
+
+%% \bxdl@provide
+\def\bxdl@provide#1{%\[bxdl@M/\CSx] | M * \CSx
+  \bxdl@check@free#1\@secondoftwo\@firstoftwo\@secondoftwo
+   {\bxdl@do@def\providecommand#1}
+   {\bxdl@provide@fail}
+}
+\def\bxdl@provide@fail#1#2#3{% M * \CSx
+  \bxdl@discard@def
+}
+
+%% \bxdl@discard@def
+\def\bxdl@discard@def{
+  \providecommand*\bxdl@frozen@cmd % always ignored
+}
+
+
+%------------------------------------------------- all done
+
+%%<*? \enabledualforaccentcommands
+\@onlypreamble\enabledualforaccentcommands
+\newcommand*\enabledualforaccentcommands{
+  \EnableDualForAccentCommands
+}
+%%<+? \EnableDualForAccentCommands
+% This silently fails after preamble.
+\newcommand*\EnableDualForAccentCommands{
+  \ifx\@notprerr\enabledualforaccentcommands
+    \bxDebug{not in preamble}
+  \else
+    \bxdl@oktrue
+    \ifx\bxdl@org@current@cmd\@current@cmd\else \bxdl@okfalse \fi
+    \ifx\bxdl@org@changed@cmd\@changed@cmd\else \bxdl@okfalse \fi
+    \ifx\bxdl@org@inmathwarn\@inmathwarn\else \bxdl@okfalse \fi
+    \ifbxdl@ok \bxdl@enable@dual@ts
+    \else \bxdl@warn@flpch
+    \fi
+  \fi
+  \let\EnableDualForAccentCommands\relax
+}
+
+%% \bxdl@enable@dual@ts
+\def\bxdl@enable@dual@ts{
+  \global\let\@inmathwarn\bxdl@inmathwarn
+  \global\bxdl@dual@textsymtrue
+  \bxDebug{textsym patched successfully}
+}
+
+%% Clears the success flag.
+\bxdl@dual@textsymfalse
+
+%% \bxdl@inmathwarn
+% Patched version of \@inmathwarn.
+\@onlypreamble\bxdl@inmathwarn
+\def\bxdl@inmathwarn#1{
+  \ifmmode % assignments disallowed before ifmmode
+    \expandafter\ifx\csname bxdl@O/\string#1\endcsname\relax\else
+      \expandafter\ifx\csname bxdl@M/\string#1\endcsname\relax\else
+        \bxdl@letcs\bxdl@ts@math{bxdl@M/\string#1}
+        \let\bxdl@do@interrupt@ts@math\bxdl@interrupt@ts@math
+      \fi
+    \fi
+    \ifx\bxdl@do@interrupt@ts@math\relax
+      \@latex@warning{Command \protect#1 invalid in math mode}
+    \fi
+  \fi
+  \bxdl@do@interrupt@ts@math
+}
+
+%% \bxdl@do@interrupt@ts@math
+\let\bxdl@do@interrupt@ts@math\relax
+
+%% \bxdl@interrupt@ts@math
+\def\bxdl@interrupt@ts@math#1{% fetches the next token
+  \let\bxdl@do@interrupt@ts@math\relax % reset
+  % #1 is expected to be either \else or \expandafter,
+  % so it cannot safely go into if-statements.
+  \bxdl@letcs\bxdl@tempa{bxdl@tsm/\string#1}
+  \bxdl@tempa#1
+}
+\@namedef{bxdl@tsm/\string\e lse}{\bxdl@interrupt@ts@math@cu}
+\@namedef{bxdl@tsm/\string\e xpandafter}{\bxdl@interrupt@ts@math@ch}
+
+%% \bxdl@interrupt@ts@math@cu
+% In expansion of \@current@cmd.
+\@gobble\if\@gobble\if % if-match hack
+\def\bxdl@interrupt@ts@math@cu#1\fi#2{
+  % Skips until \fi, also gobbling the following \[ENC\CS] token.
+  \fi % escapes from if-nest
+  \bxdl@ts@math
+}
+%% \bxdl@interrupt@ts@math@ch
+% In expansion of \@changed@cmd.
+\@gobble\if\@gobble\if % if-match hack
+\def\bxdl@interrupt@ts@math@ch#1\noexpand#2\fi{
+  % Skips until the end of\@changed@cmd.
+  \fi % escapes from if-nest
+  \bxdl@ts@math
+}
+
+%% Original definitions of \@current@cmd, etc.
+% Used as probes to detect modifications to those macros.
+\@onlypreamble\bxdl@org@current@cmd
+\def\bxdl@org@current@cmd#1{
+  \ifx\protect\@typeset@protect \@inmathwarn#1
+  \else \noexpand#1\expandafter\@gobble
+  \fi}
+\@onlypreamble\bxdl@org@changed@cmd
+\def\bxdl@org@changed@cmd#1#2{
+  \ifx\protect\@typeset@protect
+    \@inmathwarn#1
+    \expandafter\ifx\csname\cf@encoding\string#1\endcsname\relax
+      \expandafter\ifx\csname ?\string#1\endcsname\relax
+        \expandafter\def\csname ?\string#1\endcsname{
+          \TextSymbolUnavailable#1}
+      \fi
+      \global\expandafter\let\csname\cf@encoding \string#1\expandafter
+       \endcsname\csname ?\string#1\endcsname
+    \fi
+    \csname\cf@encoding\string#1\expandafter\endcsname
+  \else \noexpand#1
+  \fi}
+\@onlypreamble\bxdl@org@inmathwarn
+\def\bxdl@org@inmathwarn#1{
+  \ifmmode\@latex@warning{Command \protect#1 invalid in math mode}\fi
+}
+
+%------------------------------------------------- all done
+\endinput
+%% EOF

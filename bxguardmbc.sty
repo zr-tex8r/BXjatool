@@ -1,0 +1,324 @@
+%
+% bxguardmbc.sty
+%
+
+%% package declaration
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{bxguardmbc}[2013/12/01 v0.2]
+
+%% preparation
+\def\bxgm@pkgname{bxguardmbc}
+\def\bxgm@error{\PackageError\bxgm@pkgname}
+\def\bxgm@warn{\PackageWarning\bxgm@pkgname}
+\def\bxgm@info{\PackageInfo\bxgm@pkgname}
+
+%% code guards
+\edef\bxgm@restore@codes{%
+  \catcode47=\the\catcode47%
+  \catcode60=\the\catcode60%
+  \catcode62=\the\catcode62%
+  \catcode63=\the\catcode63%
+  \catcode96=\the\catcode96%
+\relax}
+\catcode47=12 % </>
+\catcode60=12 % <<>
+\catcode62=12 % <>>
+\catcode63=12 % <?>
+\catcode96=12 % <`>
+\AtEndOfPackage{%
+  \bxgm@restore@codes
+  \let\bxgm@restore@codes\@undefined
+}
+
+%--------------------------------------- environment check
+
+\newif\ifbxgm@use@fallback
+\newif\ifbxgm@use@ptex
+\begingroup
+  \def\bxgm@next#1#2{%
+    \edef\bxgm@tmpa{\string#1}%
+    \edef\bxgm@tmpb{\meaning#1}%
+    \ifx\bxgm@tmpa\bxgm@tmpb \global#2\fi
+  }%
+  \bxgm@next\kanjiskip\bxgm@use@ptextrue
+  \bxgm@next\XeTeXversion\bxgm@use@fallbacktrue
+  \bxgm@next\luatexversion\bxgm@use@fallbacktrue
+\endgroup
+
+%--------------------------------------- early stuffs
+
+%% variables
+\newif\ifbxgm@sing
+
+%%<*> \guardmbc*[<nest>]{<text>}
+\newcommand*\guardmbc{%
+  \let\bxgm@next\bxgm@do@guard
+  \bxgm@guard
+}
+
+%%<+> \LetGuardMbcTo*[<nest>]\CS{<text>}
+\newcommand*\LetGuardMbcTo{%
+  \let\bxgm@next\bxgm@letto@guard
+  \bxgm@guard
+}
+
+%% \bxgm@guard
+\def\bxgm@guard{%
+  \@ifstar{\bxgm@singfalse\bxgm@guard@a}%
+   {\bxgm@singtrue\bxgm@guard@a}%
+}
+\def\bxgm@guard@a{%
+  \@testopt{\bxgm@guard@b}{\m@ne}%
+}
+\def\bxgm@guard@b[#1]{%
+  \bxgm@nest=#1\relax
+  \bxgm@next
+}
+
+%% in fallback operation
+\ifbxgm@use@fallback
+  \def\bxgm@nest#1\relax{}
+  \let\bxgm@do@guard\@firstofone
+  \long\def\bxgm@letto@guard#1#2{\def#1{#2}}
+% exit now...
+\expandafter\endinput\fi\relax
+
+%=======================================
+% Start Main
+%--------------------------------------- helpers
+
+%% variables
+\newcount\bxgm@nest
+\newtoks\bxgm@toks
+\let\bxgm@stat\relax
+
+%% unique tokens
+\def\bxgm@mark{\bxgm@mark@}
+\def\bxgm@end{\bxgm@end@}
+
+%% \bxgm@cond\if...\fi{<true>}{<false>}
+\@gobbletwo\if\if
+\def\bxgm@cond#1\fi{%
+  #1\expandafter\@firstoftwo
+  \else\expandafter\@secondoftwo
+  \fi
+}
+
+%% stat constants
+\chardef\bxgm@zero=0
+\chardef\bxgm@one=1
+\chardef\bxgm@many=2
+\chardef\bxgm@failure=3
+
+%% \bxgm@maxasc
+\chardef\bxgm@maxasc=127
+
+%--------------------------------------- main
+
+%% \bxgm@do@guard{<text>}
+\def\bxgm@do@guard{%{<text>}
+  \def\bxgm@post{\the\bxgm@toks}%
+  \bxgm@main
+}
+
+%% \bxgm@letto@guard\CS{<text>}
+\def\bxgm@letto@guard#1{%{<text>}
+  \def\bxgm@post{\edef#1{\the\bxgm@toks}}%
+  \bxgm@main
+}
+
+%% \bxgm@main{<text>}
+\long\def\bxgm@main#1{%
+  \edef\bxgm@ecvalue{\the\escapechar}%
+  \escapechar=`\\
+  \bxgm@loop{#1}%
+  \escapechar=\bxgm@ecvalue
+  \ifnum\bxgm@stat=\bxgm@failure
+    \bxgm@warn{Illegal byte sequence found}%
+  \fi
+  \bxgm@post
+}
+
+%--------------------------------------- loop
+
+%% \bxgm@loop
+\def\bxgm@loop{%{<text>}
+  \bxgm@cond\ifnum\bxgm@nest=\z@\fi
+    {\bxgm@toks}% simple assignment
+    {\bxgm@loop@a}%
+}
+\long\def\bxgm@loop@a#1{%
+  \ifbxgm@sing \let\bxgm@stat\bxgm@many
+  \else \let\bxgm@stat\bxgm@zero
+  \fi
+  \bxgm@toks{}%
+  \bxgm@loop@b#1\bxgm@mark\bxgm@mark\bxgm@mark\bxgm@end
+  \ifnum\bxgm@stat=\bxgm@many \else
+    \bxgm@toks{#1}% revert to original
+  \fi
+}
+\def\bxgm@loop@b{%<tok>
+  \futurelet\bxgm@tok\bxgm@loop@c
+}
+\def\bxgm@loop@c{%<tok>
+  \bxgm@cond\ifx\bxgm@tok\bxgm@mark\fi{\bxgm@loop@fin}{%
+  \bxgm@cond\ifx\bxgm@tok\bgroup\fi{\bxgm@loop@grp}{%
+  \bxgm@cond\ifx\bxgm@tok\@sptoken\fi{\bxgm@loop@sp}{%
+  \bxgm@loop@d
+  }}}%
+}
+\long\def\bxgm@loop@d#1{%
+  \bxgm@cond\if\bxgm@ishibyte#1\fi{\bxgm@loop@mb#1}%
+    {\bxgm@loop@sb#1}%
+}
+\expandafter\def\expandafter\bxgm@loop@sp\space{%
+  \bxgm@loop@sb{ }%
+}
+\long\def\bxgm@loop@grp#1{%
+  \begingroup
+    \advance\bxgm@nest\m@ne
+    \bxgm@loop{#1}%
+    \edef\bxgm@endgroup{%
+      \endgroup
+      \ifnum\bxgm@stat=\bxgm@failure
+        \noexpand\bxgm@loop@fail
+      \else
+        \bxgm@toks\noexpand\expandafter{%
+          \noexpand\the\bxgm@toks{\the\bxgm@toks}}%
+      \fi
+    }%
+  \bxgm@endgroup
+  \let\bxgm@stat\bxgm@many
+  \bxgm@loop@b
+}
+\long\def\bxgm@loop@sb#1{%
+  \let\bxgm@stat\bxgm@many
+  \bxgm@toks\expandafter{\the\bxgm@toks#1}%
+  \bxgm@loop@b
+}
+\def\bxgm@loop@mb#1{%
+  \ifnum\bxgm@stat=\bxgm@zero \let\bxgm@stat=\bxgm@one
+  \else\ifnum\bxgm@stat=\bxgm@one \let\bxgm@stat=\bxgm@many
+  \fi\fi
+  \bxgm@invoke@hbproc#1#1%
+}
+\def\bxgm@loop@mb@go#1{%
+  \bxgm@toks\expandafter{\the\bxgm@toks{#1}}%
+  \bxgm@loop@b
+}
+\def\bxgm@loop@fail{%
+  \let\bxgm@stat\bxgm@failure
+  \bxgm@loop@fin
+}
+\long\def\bxgm@loop@fin#1\bxgm@end{%
+}
+
+%--------------------------------------- high-byte test
+
+%% \if\bxgm@ishibyte<tok>...\fi
+\long\def\bxgm@ishibyte#1{%
+  \expandafter\bxgm@ishibyte@a\string#1@@\bxgm@end T%
+}
+\def\bxgm@ishibyte@a#1#2#3\bxgm@end{%
+  \ifx @#2%
+    \ifnum`#1>\bxgm@maxasc \bxgm@ishibyte@b#1%
+    \else F\fi
+  \else F\fi
+}
+\ifbxgm@use@ptex
+\def\bxgm@next#1#2\bxgm@end{%
+  \def\bxgm@ishibyte@b##1{%
+    \ifnum`##1>\@cclvi F\else
+      \expandafter\bxgm@ishibyte@c\meaning##1#2\bxgm@end
+    \fi
+  }%
+  \def\bxgm@ishibyte@c##1#2##2\bxgm@end{%
+    \ifx @##1@F\else T\fi
+  }%
+}\expandafter\bxgm@next\string\kanji\bxgm@end
+\else
+\def\bxgm@ishibyte@b#1{T}
+\fi
+
+%--------------------------------------- high-byte grabber
+
+%% preparations
+\let\bxgm@cc\bxgm@nest
+\chardef\bxgm@mintb=128
+\chardef\bxgm@maxtb=191
+
+%% \bxgm@hbproc@xxx
+\def\bxgm@hbproc@fail{\bxgm@loop@fail}
+\def\bxgm@hbproc@two{\bxgm@hbmain2}
+\def\bxgm@hbproc@three{\bxgm@hbmain3}
+\def\bxgm@hbproc@four{\bxgm@hbmain4}
+
+%% \bxgm@invoke@hbproc<byte>
+\def\bxgm@invoke@hbproc#1{%
+  \csname bxgm@prc/\string#1\endcsname
+}
+
+%% Assigns hbproc.
+\bxgm@cc=128
+\def\bxgm@next#1#2{%
+  \@whilenum{\bxgm@cc<#1}\do{%
+    \begingroup
+      \lccode`\?=\bxgm@cc
+      \lowercase{\global\expandafter\let\csname
+       bxgm@prc/?\endcsname#2}%
+    \endgroup
+    \advance\bxgm@cc\@ne
+  }%
+}
+\bxgm@next{192}\bxgm@hbproc@fail
+\bxgm@next{224}\bxgm@hbproc@two
+\bxgm@next{240}\bxgm@hbproc@three
+\bxgm@next{248}\bxgm@hbproc@four
+\bxgm@next{256}\bxgm@hbproc@fail
+
+%% \bxgm@hbmain<num><first>...
+\def\bxgm@hbmain#1#2{%
+  \begingroup
+    \bxgm@nest=#1\relax \advance\bxgm@nest\m@ne
+    \bxgm@toks{#2}%
+    \bxgm@hbmain@a
+}
+\def\bxgm@hbmain@a{%
+  \bxgm@cond\ifnum\bxgm@nest=\z@\fi{%
+    \bxgm@hbmain@fin
+  }{%else
+    \advance\bxgm@nest\m@ne
+    \futurelet\bxgm@tok\bxgm@hbmain@b
+  }%
+}
+\def\bxgm@hbmain@b{%
+  \bxgm@cond\ifx\bxgm@tok\bgroup\fi{\bxgm@hbmain@fail}{%
+  \bxgm@cond\ifx\bxgm@tok\@sptoken\fi{\bxgm@hbmain@fail}{%
+    \bxgm@hbmain@c
+  }}%
+}
+\long\def\bxgm@hbmain@c#1{%
+  \bxgm@cond\if\noexpand#1\relax\fi{\bxgm@hbmain@fail}{%
+%\typeout{\number`#1}%
+  \bxgm@cond\ifnum`#1<\bxgm@mintb\fi{\bxgm@hbmain@fail}{%
+  \bxgm@cond\ifnum`#1>\bxgm@maxtb\fi{\bxgm@hbmain@fail}{%
+    \bxgm@toks\expandafter{\the\bxgm@toks#1}%
+%\typeout{<\the\bxgm@toks>}%
+    \bxgm@hbmain@a
+  }}}%
+}
+\def\bxgm@hbmain@fail{%
+    \endgroup
+  \bxgm@main@fail
+}
+\def\bxgm@hbmain@fin{%
+    \edef\bxgm@endgroup{%
+      \endgroup
+      \noexpand\bxgm@loop@mb@go{\the\bxgm@toks}%
+    }%
+  \bxgm@endgroup
+}
+
+%--------------------------------------- all done
+\endinput
+%% EOF
